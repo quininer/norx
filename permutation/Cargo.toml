@@ -1,0 +1,10 @@
+[package]
+name = "norx-permutation"
+version = "0.1.0"
+authors = ["quininer <quininer@live.com>"]
+
+[dependencies]
+
+[features]
+default = [ "config_6461" ]
+config_6461 = []
