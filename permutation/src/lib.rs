@@ -5,11 +5,7 @@ extern crate coresimd;
 pub mod portable;
 
 #[cfg(feature = "simd")]
-#[cfg(any(
-    feature = "config_6441",
-    feature = "config_6444",
-    feature = "config_6461"
-))]
+#[cfg(any(feature = "config_644", feature = "config_646"))]
 #[path = "x64_ssse3.rs"]
 pub mod ssse3;
 
@@ -19,57 +15,44 @@ pub use config::*;
 pub const T: usize = mem::size_of::<U>() * 4;
 
 
-#[cfg(feature = "config_0841")]
+#[cfg(feature = "config_084")]
 mod config {
     pub type U = u8;
     pub const L: usize = 4;
-    pub const P: usize = 1;
 }
 
-#[cfg(feature = "config_1641")]
+#[cfg(feature = "config_164")]
 mod config {
     pub type U = u16;
     pub const L: usize = 4;
-    pub const P: usize = 1;
 }
 
-#[cfg(feature = "config_3241")]
+#[cfg(feature = "config_324")]
 mod config {
     pub type U = u32;
     pub const L: usize = 4;
-    pub const P: usize = 1;
 }
 
-#[cfg(feature = "config_3261")]
+#[cfg(feature = "config_326")]
 mod config {
     pub type U = u32;
     pub const L: usize = 6;
-    pub const P: usize = 1;
 }
 
-#[cfg(feature = "config_6441")]
+#[cfg(feature = "config_644")]
 mod config {
     pub type U = u64;
     pub const L: usize = 4;
-    pub const P: usize = 1;
 }
 
-#[cfg(feature = "config_6444")]
-mod config {
-    pub type U = u64;
-    pub const L: usize = 4;
-    pub const P: usize = 4;
-}
-
-#[cfg(feature = "config_6461")]
+#[cfg(feature = "config_646")]
 mod config {
     pub type U = u64;
     pub const L: usize = 6;
-    pub const P: usize = 1;
 }
 
 
-#[cfg(feature = "config_0841")]
+#[cfg(feature = "config_084")]
 mod rot_const {
     pub const R0: u32 = 1;
     pub const R1: u32 = 3;
@@ -77,7 +60,7 @@ mod rot_const {
     pub const R3: u32 = 7;
 }
 
-#[cfg(feature = "config_1641")]
+#[cfg(feature = "config_164")]
 mod rot_const {
     pub const R0: u32 =  8;
     pub const R1: u32 = 11;
@@ -85,7 +68,7 @@ mod rot_const {
     pub const R3: u32 = 15;
 }
 
-#[cfg(any(feature = "config_3241", feature = "config_3261"))]
+#[cfg(any(feature = "config_324", feature = "config_326"))]
 mod rot_const {
     pub const R0: u32 =  8;
     pub const R1: u32 = 11;
@@ -93,11 +76,7 @@ mod rot_const {
     pub const R3: u32 = 31;
 }
 
-#[cfg(any(
-    feature = "config_6441",
-    feature = "config_6444",
-    feature = "config_6461"
-))]
+#[cfg(any(feature = "config_644", feature = "config_646"))]
 mod rot_const {
     pub const R0: u32 =  8;
     pub const R1: u32 = 19;

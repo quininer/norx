@@ -61,49 +61,6 @@ pub fn norx(state: &mut [U; 16]) {
 }
 
 
-#[cfg(not(any(feature = "config_6441", feature = "config_6461")))]
-unsafe fn g(
-    mut a0: u64x2, mut a1: u64x2, mut b0: u64x2, mut b1: u64x2,
-    mut c0: u64x2, mut c1: u64x2, mut d0: u64x2, mut d1: u64x2
-) -> (u64x2, u64x2, u64x2, u64x2, u64x2, u64x2,u64x2, u64x2) {
-    let (mut l0, mut l1, mut r0, mut r1);
-
-    l0 = xor(a0, b0);    r0 = xor(a1, b1);
-    l1 = and(a0, b0);    r1 = and(a1, b1);
-    l1 = add(l1, l1);    r1 = add(r1, r1);
-    a0 = xor(l0, l1);    a1 = xor(r0, r1);
-    d0 = xor(d0, l0);    d1 = xor(d1, r0);
-    d0 = xor(d0, l1);    d1 = xor(d1, r1);
-    d0 = rot(d0, R0);    d1 = rot(d1, R0);
-
-    l0 = xor(c0, d0);    r0 = xor(c1, d1);
-    l1 = and(c0, d0);    r1 = and(c1, d1);
-    l1 = add(l1, l1);    r1 = add(r1, r1);
-    c0 = xor(l0, l1);    c1 = xor(r0, r1);
-    b0 = xor(b0, l0);    b1 = xor(b1, r0);
-    b0 = xor(b0, l1);    b1 = xor(b1, r1);
-    b0 = rot(b0, R1);    b1 = rot(b1, R1);
-
-    l0 = xor(a0, b0);    r0 = xor(a1, b1);
-    l1 = and(a0, b0);    r1 = and(a1, b1);
-    l1 = add(l1, l1);    r1 = add(r1, r1);
-    a0 = xor(l0, l1);    a1 = xor(r0, r1);
-    d0 = xor(d0, l0);    d1 = xor(d1, r0);
-    d0 = xor(d0, l1);    d1 = xor(d1, r1);
-    d0 = rot(d0, R2);    d1 = rot(d1, R2);
-
-    l0 = xor(c0, d0);    r0 = xor(c1, d1);
-    l1 = and(c0, d0);    r1 = and(c1, d1);
-    l1 = add(l1, l1);    r1 = add(r1, r1);
-    c0 = xor(l0, l1);    c1 = xor(r0, r1);
-    b0 = xor(b0, l0);    b1 = xor(b1, r0);
-    b0 = xor(b0, l1);    b1 = xor(b1, r1);
-    b0 = rot(b0, R3);    b1 = rot(b1, R3);
-
-    (a0, a1, b0, b1, c0, c1, d0, d1)
-}
-
-#[cfg(any(feature = "config_6441", feature = "config_6461"))]
 unsafe fn g(
     mut a0: u64x2, mut a1: u64x2, mut b0: u64x2, mut b1: u64x2,
     mut c0: u64x2, mut c1: u64x2, mut d0: u64x2, mut d1: u64x2
