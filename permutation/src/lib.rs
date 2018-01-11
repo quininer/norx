@@ -1,6 +1,17 @@
 extern crate core;
+#[cfg(feature = "simd")]
+extern crate coresimd;
 
 pub mod portable;
+
+#[cfg(feature = "simd")]
+#[cfg(any(
+    feature = "config_6441",
+    feature = "config_6444",
+    feature = "config_6461"
+))]
+#[path = "x64_ssse3.rs"]
+pub mod ssse3;
 
 
 use core::mem;

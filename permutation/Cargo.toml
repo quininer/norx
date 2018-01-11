@@ -4,9 +4,11 @@ version = "0.1.0"
 authors = ["quininer <quininer@live.com>"]
 
 [dependencies]
+coresimd = { git = "https://github.com/rust-lang-nursery/stdsimd", optional = true }
 
 [features]
 default = [ "config_6461" ]
+simd = [ "coresimd" ]
 config_0841 = []
 config_1641 = []
 config_3241 = []
