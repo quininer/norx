@@ -1,0 +1,11 @@
+language: rust
+rust: nightly
+
+script:
+  - cd permutation
+  - cargo test --no-default-features --features "config_644"
+  - cargo test --no-default-features --features "config_646"
+  - env RUSTFLAGS="-C target-cpu=native" cargo test --no-default-features --features "simd config_644"
+  - env RUSTFLAGS="-C target-cpu=native" cargo test --no-default-features --features "simd config_646"
+
+cache: cargo

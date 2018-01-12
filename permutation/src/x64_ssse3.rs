@@ -1,3 +1,5 @@
+#![cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
+
 use coresimd::simd::u64x2;
 use coresimd::vendor::{
     _mm_xor_si128, _mm_add_epi64,
@@ -10,7 +12,7 @@ use ::{ U, L };
 use ::rot_const::*;
 
 
-pub fn norx(state: &mut [U; 16]) {
+pub unsafe fn norx(state: &mut [U; 16]) {
     unsafe fn f(state: &mut [u64x2; 8]) {
         macro_rules! EX {
             ( $f:ident ( $a0:expr, $a1:expr, $b0:expr, $b1:expr, $c0:expr, $c1:expr, $d0:expr, $d1:expr ) ) => {
@@ -19,11 +21,8 @@ pub fn norx(state: &mut [U; 16]) {
                 $a0 = a0; $a1 = a1; $b0 = b0; $b1 = b1;
                 $c0 = c0; $c1 = c1; $d0 = d0; $d1 = d1;
             };
-
-            ( $(
-                $f:ident ( $a0:expr, $a1:expr, $b0:expr, $b1:expr, $c0:expr, $c1:expr, $d0:expr, $d1:expr )
-            );+ ) => {
-                $( EX!($f($a0, $a1, $b0, $b1, $c0, $c1, $d0, $d1)); )+
+            ( $( $f:ident ( $( $a:expr ),+ ) );+ ) => {
+                $( EX!( $f( $( $a ),+ ) ); )+
             }
         }
 
@@ -47,7 +46,7 @@ pub fn norx(state: &mut [U; 16]) {
     ];
 
     for _ in 0..L {
-        unsafe { f(&mut s) };
+        f(&mut s);
     }
 
     s[0].store(state, 0);
