@@ -21,16 +21,16 @@ pub unsafe fn norx(state: &mut [U; 16]) {
                 $a0 = a0; $a1 = a1; $b0 = b0; $b1 = b1;
                 $c0 = c0; $c1 = c1; $d0 = d0; $d1 = d1;
             };
-            ( $( $f:ident ( $( $a:expr ),+ ) );+ ) => {
+            ( $( $f:ident ( $( $a:expr ),+ ) );+ ; ) => {
                 $( EX!( $f( $( $a ),+ ) ); )+
-            }
+            };
         }
 
         EX!{
             g(state[0], state[1], state[2], state[3], state[4], state[5], state[6], state[7]);
             diagonalize(state[0], state[1], state[2], state[3], state[4], state[5], state[6], state[7]);
             g(state[0], state[1], state[2], state[3], state[4], state[5], state[6], state[7]);
-            undiagonalize(state[0], state[1], state[2], state[3], state[4], state[5], state[6], state[7])
+            undiagonalize(state[0], state[1], state[2], state[3], state[4], state[5], state[6], state[7]);
         }
     }
 

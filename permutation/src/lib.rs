@@ -9,6 +9,11 @@ pub mod portable;
 #[path = "x64_ssse3.rs"]
 pub mod ssse3;
 
+#[cfg(feature = "simd")]
+#[cfg(any(feature = "config_644", feature = "config_646"))]
+#[path = "x64_avx2.rs"]
+pub mod avx2;
+
 
 use core::mem;
 pub use config::*;

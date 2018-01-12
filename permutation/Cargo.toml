@@ -7,7 +7,7 @@ authors = ["quininer <quininer@live.com>"]
 coresimd = { git = "https://github.com/rust-lang-nursery/stdsimd", optional = true }
 
 [features]
-default = [ "config_646" ]
+default = [ "config_644" ]
 simd = [ "coresimd" ]
 config_084 = []
 config_164 = []
