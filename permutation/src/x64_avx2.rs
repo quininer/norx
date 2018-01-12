@@ -6,11 +6,11 @@ use coresimd::vendor::{
     _mm256_srli_epi64, _mm256_slli_epi64,
     _mm256_permute4x64_epi64
 };
-use ::{ U, L };
+use ::{ U, S, L };
 use ::rot_const::*;
 
 
-pub unsafe fn norx(state: &mut [U; 16]) {
+pub unsafe fn norx(state: &mut [U; S]) {
     unsafe fn f(state: &mut [u64x4; 4]) {
         macro_rules! EX {
             ( $f:ident ( $a:expr, $b:expr, $c:expr, $d:expr ) ) => {

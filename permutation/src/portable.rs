@@ -1,10 +1,10 @@
-use ::{ U, L };
+use ::{ U, S, L };
 use ::rot_const::*;
 
 
-pub fn norx(state: &mut [U; 16]) {
+pub fn norx(state: &mut [U; S]) {
     /// The full round
-    fn f(state: &mut [U; 16]) {
+    fn f(state: &mut [U; S]) {
         macro_rules! G {
             ( $a:expr, $b:expr, $c:expr, $d:expr ) => {
                 let (a, b, c, d) = g($a, $b, $c, $d);

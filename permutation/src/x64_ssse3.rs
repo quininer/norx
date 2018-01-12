@@ -8,11 +8,11 @@ use coresimd::vendor::{
     _mm_srli_epi64, _mm_slli_epi64,
     _mm_alignr_epi8
 };
-use ::{ U, L };
+use ::{ U, S, L };
 use ::rot_const::*;
 
 
-pub unsafe fn norx(state: &mut [U; 16]) {
+pub unsafe fn norx(state: &mut [U; S]) {
     unsafe fn f(state: &mut [u64x2; 8]) {
         macro_rules! EX {
             ( $f:ident ( $a0:expr, $a1:expr, $b0:expr, $b1:expr, $c0:expr, $c1:expr, $d0:expr, $d1:expr ) ) => {

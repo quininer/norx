@@ -1,27 +1,62 @@
 #![no_std]
+#![cfg_attr(feature = "simd", feature(cfg_target_feature))]
 
 #[cfg(feature = "simd")]
+#[macro_use]
 extern crate coresimd;
 
 pub mod portable;
 
 #[cfg(feature = "simd")]
 #[cfg(any(feature = "config_324", feature = "config_326"))]
+#[cfg(target_feature = "ssse3")]
 #[path = "x32_ssse3.rs"]
 pub mod ssse3;
 
 #[cfg(feature = "simd")]
 #[cfg(any(feature = "config_644", feature = "config_646"))]
+#[cfg(target_feature = "ssse3")]
 #[path = "x64_ssse3.rs"]
 pub mod ssse3;
 
 #[cfg(feature = "simd")]
 #[cfg(any(feature = "config_644", feature = "config_646"))]
+#[cfg(target_feature = "avx2")]
 #[path = "x64_avx2.rs"]
 pub mod avx2;
 
 
+#[cfg(not(feature = "simd"))]
+pub use portable::norx;
+
+#[cfg(feature = "simd")]
+#[inline]
+pub fn norx(state: &mut [U; S]) {
+    #[cfg(any(feature = "config_644", feature = "config_646"))]
+    #[cfg(target_feature = "avx2")]
+    unsafe {
+        if cfg_feature_enabled!("avx2") {
+            return avx2::norx(state);
+        }
+    }
+
+    #[cfg(any(
+        feature = "config_324", feature = "config_326",
+        feature = "config_644", feature = "config_646"
+    ))]
+    #[cfg(target_feature = "ssse3")]
+    unsafe {
+        if cfg_feature_enabled!("ssse3") {
+            return ssse3::norx(state);
+        }
+    }
+
+    portable::norx(state)
+}
+
+
 pub use config::*;
+pub const S: usize = 16;
 
 #[cfg(feature = "config_084")]
 mod config {
