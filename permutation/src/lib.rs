@@ -1,8 +1,14 @@
-extern crate core;
+#![no_std]
+
 #[cfg(feature = "simd")]
 extern crate coresimd;
 
 pub mod portable;
+
+#[cfg(feature = "simd")]
+#[cfg(any(feature = "config_324", feature = "config_326"))]
+#[path = "x32_ssse3.rs"]
+pub mod ssse3;
 
 #[cfg(feature = "simd")]
 #[cfg(any(feature = "config_644", feature = "config_646"))]
@@ -15,10 +21,7 @@ pub mod ssse3;
 pub mod avx2;
 
 
-use core::mem;
 pub use config::*;
-pub const T: usize = mem::size_of::<U>() * 4;
-
 
 #[cfg(feature = "config_084")]
 mod config {

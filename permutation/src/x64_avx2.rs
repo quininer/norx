@@ -123,7 +123,7 @@ unsafe fn rot(x: u64x4, c: u32) -> u64x4 {
          8 => _mm256_shuffle_epi8(x.into(), _mm256_set_epi8( 8,15,14,13,12,11,10, 9, 0,7,6,5,4,3,2,1,  8,15,14,13,12,11,10, 9, 0,7,6,5,4,3,2,1).into()).into(),
         40 => _mm256_shuffle_epi8(x.into(), _mm256_set_epi8(12,11,10, 9, 8,15,14,13, 4,3,2,1,0,7,6,5, 12,11,10, 9, 8,15,14,13, 4,3,2,1,0,7,6,5).into()).into(),
         63 => _mm256_or_si256(_mm256_add_epi64(x.into(), x.into()).into(), _mm256_srli_epi64(x.into(), 63).into()).into(),
-        _ => _mm256_or_si256(_mm256_srli_epi64(x.into(), c as i32).into(), _mm256_slli_epi64(x.into(), 64 - c as i32).into()).into()
+         _ => _mm256_or_si256(_mm256_srli_epi64(x.into(), c as i32).into(), _mm256_slli_epi64(x.into(), 64 - c as i32).into()).into()
     }
 }
 

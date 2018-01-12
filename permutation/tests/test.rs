@@ -1,23 +1,13 @@
+#![cfg_attr(feature = "cargo-clippy", allow(unreadable_literal))]
+
 extern crate norx_permutation;
 
 use norx_permutation::U;
 
 #[cfg(feature = "config_084")] const INPUT: [U; 16] = [0x4b, 0x24, 0x21, 0x33, 0x0d, 0xa3, 0x87, 0x80, 0x78, 0x58, 0xf7, 0xa4, 0x06, 0x52, 0x45, 0x3c];
 #[cfg(feature = "config_164")] const INPUT: [U; 16] = [0xaea3, 0xf8b1, 0xc76a, 0x75d9, 0xf348, 0xad00, 0x9360, 0x5dc5, 0xd6b9, 0x62ce, 0x547e, 0x9059, 0x11de, 0x804b, 0x38cd, 0x5b3a];
-
-#[cfg(any(feature = "config_324", feature = "config_326"))]
-const INPUT: [U; 16] = [
-    0x0567e9ed, 0xea98dc65, 0x0bd89cec, 0x16bbf579, 0x9767a1f3, 0x3f004c54, 0x3a7c2bc2, 0x357f3882,
-    0xc63d174d, 0x17ebcd84, 0x834d79ac, 0x12fd72b1, 0xe0e463e5, 0x46fb8fa4, 0xc34feaf4, 0x8f9e8686
-];
-
-#[cfg(any(feature = "config_644", feature = "config_646"))]
-const INPUT: [U; 16] = [
-    0xcb3664cd781577a4, 0xfa8d9e54bce5f8b2, 0x24ddf7e3dec66b33, 0xd57c8c27c9893ccd,
-    0x9e9088a6ca66bb01, 0xe1478c6bc8f91159, 0x552c525d9e9722bd, 0x380c985ec23474d6,
-    0x0aa618d997f17b63, 0xee68f0781c035fa4, 0x254b9765b83d50b9, 0x72b72243aba2b1dc,
-    0x0d3f9d918637b26d, 0x32cd20bb135236b3, 0x88a958b29d5a9657, 0x24aba9dbd1f60066
-];
+#[cfg(any(feature = "config_324", feature = "config_326"))] const INPUT: [U; 16] = [0x0567e9ed, 0xea98dc65, 0x0bd89cec, 0x16bbf579, 0x9767a1f3, 0x3f004c54, 0x3a7c2bc2, 0x357f3882,0xc63d174d, 0x17ebcd84, 0x834d79ac, 0x12fd72b1, 0xe0e463e5, 0x46fb8fa4, 0xc34feaf4, 0x8f9e8686];
+#[cfg(any(feature = "config_644", feature = "config_646"))] const INPUT: [U; 16] = [0xcb3664cd781577a4, 0xfa8d9e54bce5f8b2, 0x24ddf7e3dec66b33, 0xd57c8c27c9893ccd, 0x9e9088a6ca66bb01, 0xe1478c6bc8f91159, 0x552c525d9e9722bd, 0x380c985ec23474d6, 0x0aa618d997f17b63, 0xee68f0781c035fa4, 0x254b9765b83d50b9, 0x72b72243aba2b1dc,0x0d3f9d918637b26d, 0x32cd20bb135236b3, 0x88a958b29d5a9657, 0x24aba9dbd1f60066];
 
 #[cfg(feature = "config_084")] const OUTPUT: [U; 16] = [0x45, 0x3c, 0x83, 0xe1, 0x09, 0x41, 0xfb, 0xde, 0xa2, 0x86, 0x4f, 0xa1, 0x38, 0xdc, 0xa5, 0xee];
 #[cfg(feature = "config_164")] const OUTPUT: [U; 16] = [0xa46e, 0x99d1, 0xf54c, 0x53ff, 0x47e0, 0xc58a, 0x7af8, 0x39a2, 0xef4e, 0x7eec, 0x1229, 0xd3cf, 0x12b9, 0xa8a7, 0x43b4, 0xf65e];
@@ -40,7 +30,10 @@ fn test_norx_portable() {
 }
 
 #[cfg(feature = "simd")]
-#[cfg(any(feature = "config_644", feature = "config_646"))]
+#[cfg(any(
+    feature = "config_324", feature = "config_326",
+    feature = "config_644", feature = "config_646"
+))]
 #[test]
 fn test_norx_ssse3() {
     use norx_permutation::ssse3;
