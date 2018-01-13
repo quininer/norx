@@ -8,22 +8,32 @@ extern crate coresimd;
 pub mod portable;
 
 #[cfg(feature = "simd")]
-#[cfg(any(feature = "config_324", feature = "config_326"))]
+#[cfg(feature = "W32")]
 #[cfg(target_feature = "ssse3")]
 #[path = "x32_ssse3.rs"]
 pub mod ssse3;
 
 #[cfg(feature = "simd")]
-#[cfg(any(feature = "config_644", feature = "config_646"))]
+#[cfg(feature = "W64")]
 #[cfg(target_feature = "ssse3")]
 #[path = "x64_ssse3.rs"]
 pub mod ssse3;
 
 #[cfg(feature = "simd")]
-#[cfg(any(feature = "config_644", feature = "config_646"))]
+#[cfg(feature = "W64")]
 #[cfg(target_feature = "avx2")]
 #[path = "x64_avx2.rs"]
 pub mod avx2;
+
+#[cfg(feature = "W8")]  pub type U = u8;
+#[cfg(feature = "W16")] pub type U = u16;
+#[cfg(feature = "W32")] pub type U = u32;
+#[cfg(feature = "W64")] pub type U = u64;
+
+#[cfg(feature = "L4")] pub const L: usize = 4;
+#[cfg(feature = "L6")] pub const L: usize = 6;
+
+pub const S: usize = 16;
 
 
 #[cfg(not(feature = "simd"))]
@@ -32,7 +42,7 @@ pub use portable::norx;
 #[cfg(feature = "simd")]
 #[inline]
 pub fn norx(state: &mut [U; S]) {
-    #[cfg(any(feature = "config_644", feature = "config_646"))]
+    #[cfg(feature = "W64")]
     #[cfg(target_feature = "avx2")]
     unsafe {
         if cfg_feature_enabled!("avx2") {
@@ -40,10 +50,7 @@ pub fn norx(state: &mut [U; S]) {
         }
     }
 
-    #[cfg(any(
-        feature = "config_324", feature = "config_326",
-        feature = "config_644", feature = "config_646"
-    ))]
+    #[cfg(any(feature = "W32", feature = "W64"))]
     #[cfg(target_feature = "ssse3")]
     unsafe {
         if cfg_feature_enabled!("ssse3") {
@@ -55,47 +62,7 @@ pub fn norx(state: &mut [U; S]) {
 }
 
 
-pub use config::*;
-pub const S: usize = 16;
-
-#[cfg(feature = "config_084")]
-mod config {
-    pub type U = u8;
-    pub const L: usize = 4;
-}
-
-#[cfg(feature = "config_164")]
-mod config {
-    pub type U = u16;
-    pub const L: usize = 4;
-}
-
-#[cfg(feature = "config_324")]
-mod config {
-    pub type U = u32;
-    pub const L: usize = 4;
-}
-
-#[cfg(feature = "config_326")]
-mod config {
-    pub type U = u32;
-    pub const L: usize = 6;
-}
-
-#[cfg(feature = "config_644")]
-mod config {
-    pub type U = u64;
-    pub const L: usize = 4;
-}
-
-#[cfg(feature = "config_646")]
-mod config {
-    pub type U = u64;
-    pub const L: usize = 6;
-}
-
-
-#[cfg(feature = "config_084")]
+#[cfg(feature = "W8")]
 mod rot_const {
     pub const R0: u32 = 1;
     pub const R1: u32 = 3;
@@ -103,7 +70,7 @@ mod rot_const {
     pub const R3: u32 = 7;
 }
 
-#[cfg(feature = "config_164")]
+#[cfg(feature = "W16")]
 mod rot_const {
     pub const R0: u32 =  8;
     pub const R1: u32 = 11;
@@ -111,7 +78,7 @@ mod rot_const {
     pub const R3: u32 = 15;
 }
 
-#[cfg(any(feature = "config_324", feature = "config_326"))]
+#[cfg(feature = "W32")]
 mod rot_const {
     pub const R0: u32 =  8;
     pub const R1: u32 = 11;
@@ -119,7 +86,7 @@ mod rot_const {
     pub const R3: u32 = 31;
 }
 
-#[cfg(any(feature = "config_644", feature = "config_646"))]
+#[cfg(feature = "W64")]
 mod rot_const {
     pub const R0: u32 =  8;
     pub const R1: u32 = 19;

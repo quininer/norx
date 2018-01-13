@@ -3,14 +3,16 @@ rust: nightly
 
 script:
   - cd permutation
-  - cargo test --no-default-features --features "config_084"
-  - cargo test --no-default-features --features "config_164"
-  - cargo test --no-default-features --features "config_324"
-  - cargo test --no-default-features --features "config_326"
-  - cargo test --no-default-features --features "config_644"
-  - cargo test --no-default-features --features "config_646"
+  - cargo test --no-default-features --features "W8  L4"
+  - cargo test --no-default-features --features "W16 L4"
+  - cargo test --no-default-features --features "W32 L4"
+  - cargo test --no-default-features --features "W32 L6"
+  - cargo test --no-default-features --features "W64 L4"
+  - cargo test --no-default-features --features "W64 L6"
   - # TODO simd test
-  - # env RUSTFLAGS="-C target-cpu=native" cargo test --no-default-features --features "simd config_644"
-  - # env RUSTFLAGS="-C target-cpu=native" cargo test --no-default-features --features "simd config_646"
+  - # env RUSTFLAGS="-C target-cpu=native" cargo test --no-default-features --features "simd W32 L4"
+  - # env RUSTFLAGS="-C target-cpu=native" cargo test --no-default-features --features "simd W32 L6"
+  - # env RUSTFLAGS="-C target-cpu=native" cargo test --no-default-features --features "simd W64 L4"
+  - # env RUSTFLAGS="-C target-cpu=native" cargo test --no-default-features --features "simd W64 L6"
 
 cache: cargo
