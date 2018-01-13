@@ -1,2 +1,23 @@
+[package]
+name = "norx"
+version = "0.1.0"
+authors = ["quininer <quininer@live.com>"]
+
 [workspace]
 members = [ "permutation" ]
+
+[dependencies]
+byteorder = "*"
+norx-permutation = { path = "permutation", default-features = false }
+
+[features]
+default = [ "W64", "L4", "P1" ]
+simd = [ "norx-permutation/simd" ]
+W8 = [ "norx-permutation/W8" ]
+W16 = [ "norx-permutation/W16" ]
+W32 = [ "norx-permutation/W32" ]
+W64 = [ "norx-permutation/W64" ]
+L4 = [ "norx-permutation/L4" ]
+L6 = [ "norx-permutation/L6" ]
+P1 = []
+P4 = []

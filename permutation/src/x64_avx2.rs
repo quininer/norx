@@ -1,8 +1,8 @@
 use coresimd::simd::u64x4;
 use coresimd::vendor::{
-    _mm256_xor_si256, _mm256_and_si256, _mm256_add_epi64,
+    _mm256_xor_si256, _mm256_and_si256,
+    _mm256_add_epi64, _mm256_or_si256,
     _mm256_shuffle_epi8, _mm256_set_epi8,
-    _mm256_or_si256,
     _mm256_srli_epi64, _mm256_slli_epi64,
     _mm256_permute4x64_epi64
 };
