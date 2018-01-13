@@ -20,22 +20,33 @@ use norx_permutation::{ U, S };
 
 #[test]
 fn test_norx() {
-    use norx_permutation::norx;
+    use norx_permutation::{ norx, norx_x4 };
 
-    let mut state = [0; S];
-    state.clone_from(&INPUT);
+    let mut state = INPUT;
 
     norx(&mut state);
 
     assert_eq!(state, OUTPUT);
+
+
+    let mut state1 = INPUT;
+    let mut state2 = INPUT;
+    let mut state3 = INPUT;
+    let mut state4 = INPUT;
+
+    norx_x4(&mut state1, &mut state2, &mut state3, &mut state4);
+
+    assert_eq!(state1, OUTPUT);
+    assert_eq!(state2, OUTPUT);
+    assert_eq!(state3, OUTPUT);
+    assert_eq!(state4, OUTPUT);
 }
 
 #[test]
 fn test_norx_portable() {
     use norx_permutation::portable;
 
-    let mut state = [0; S];
-    state.clone_from(&INPUT);
+    let mut state = INPUT;
 
     portable::norx(&mut state);
 
@@ -49,8 +60,7 @@ fn test_norx_portable() {
 fn test_norx_ssse3() {
     use norx_permutation::ssse3;
 
-    let mut state = [0; S];
-    state.clone_from(&INPUT);
+    let mut state = INPUT;
 
     unsafe { ssse3::norx(&mut state) };
 
@@ -64,10 +74,29 @@ fn test_norx_ssse3() {
 fn test_norx_avx2() {
     use norx_permutation::avx2;
 
-    let mut state = [0; S];
-    state.clone_from(&INPUT);
+    let mut state = INPUT;
 
     unsafe { avx2::norx(&mut state) };
 
     assert_eq!(state, OUTPUT);
+}
+
+#[cfg(feature = "simd")]
+#[cfg(feature = "W64")]
+#[cfg(target_feature = "avx2")]
+#[test]
+fn test_norx_avx2_x4() {
+    use norx_permutation::avx2;
+
+    let mut state1 = INPUT;
+    let mut state2 = INPUT;
+    let mut state3 = INPUT;
+    let mut state4 = INPUT;
+
+    unsafe { avx2::norx_x4(&mut state1, &mut state2, &mut state3, &mut state4) };
+
+    assert_eq!(state1, OUTPUT);
+    assert_eq!(state2, OUTPUT);
+    assert_eq!(state3, OUTPUT);
+    assert_eq!(state4, OUTPUT);
 }

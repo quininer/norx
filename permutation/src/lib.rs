@@ -62,6 +62,33 @@ pub fn norx(state: &mut [U; S]) {
 }
 
 
+#[cfg(not(feature = "simd"))]
+#[inline]
+pub fn norx_x4(state1: &mut [U; S], state2: &mut [U; S], state3: &mut [U; S], state4: &mut [U; S]) {
+    norx(state1);
+    norx(state2);
+    norx(state3);
+    norx(state4);
+}
+
+#[cfg(feature = "simd")]
+#[inline]
+pub fn norx_x4(state1: &mut [U; S], state2: &mut [U; S], state3: &mut [U; S], state4: &mut [U; S]) {
+    #[cfg(feature = "W64")]
+    #[cfg(target_feature = "avx2")]
+    unsafe {
+        if cfg_feature_enabled!("avx2") {
+            return avx2::norx_x4(state1, state2, state3, state4);
+        }
+    }
+
+    norx(state1);
+    norx(state2);
+    norx(state3);
+    norx(state4);
+}
+
+
 #[cfg(feature = "W8")]
 mod rot_const {
     pub const R0: u32 = 1;

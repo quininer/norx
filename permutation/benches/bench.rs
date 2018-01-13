@@ -46,3 +46,20 @@ fn bench_norx_avx2(b: &mut Bencher) {
         avx2::norx(&mut data);
     });
 }
+
+#[cfg(feature = "simd")]
+#[cfg(feature = "W64")]
+#[cfg(target_feature = "avx2")]
+#[bench]
+fn bench_norx_avx2_x4(b: &mut Bencher) {
+    use norx_permutation::avx2;
+
+    let mut data1 = black_box([42; S]);
+    let mut data2 = black_box([42; S]);
+    let mut data3 = black_box([42; S]);
+    let mut data4 = black_box([42; S]);
+
+    b.iter(|| unsafe {
+        avx2::norx_x4(&mut data1, &mut data2, &mut data3, &mut data4);
+    });
+}

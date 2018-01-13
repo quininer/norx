@@ -10,18 +10,19 @@ use ::{ U, S, L };
 use ::rot_const::*;
 
 
+macro_rules! EX {
+    ( $f:ident ( $a:expr, $b:expr, $c:expr, $d:expr ) ) => {
+        let (a, b, c, d) = $f($a, $b, $c, $d);
+        $a = a; $b = b; $c = c; $d = d;
+    };
+    ( $( $f:ident ( $( $a:expr ),+ ) );+ ; ) => {
+        $( EX!( $f( $( $a ),+ ) ); )+
+    }
+}
+
+
 pub unsafe fn norx(state: &mut [U; S]) {
     unsafe fn f(state: &mut [u64x4; 4]) {
-        macro_rules! EX {
-            ( $f:ident ( $a:expr, $b:expr, $c:expr, $d:expr ) ) => {
-                let (a, b, c, d) = $f($a, $b, $c, $d);
-                $a = a; $b = b; $c = c; $d = d;
-            };
-            ( $( $f:ident ( $( $a:expr ),+ ) );+ ; ) => {
-                $( EX!( $f( $( $a ),+ ) ); )+
-            }
-        }
-
         EX!{
             g(state[0], state[1], state[2], state[3]);
             diagonalize(state[0], state[1], state[2], state[3]);
@@ -45,6 +46,43 @@ pub unsafe fn norx(state: &mut [U; S]) {
     s[1].store(state, 4);
     s[2].store(state, 8);
     s[3].store(state, 12);
+}
+
+pub unsafe fn norx_x4(state1: &mut [U; S], state2: &mut [U; S], state3: &mut [U; S], state4: &mut [U; S]) {
+    unsafe fn f_x4(state: &mut [u64x4; 16]) {
+        EX!{
+            g_x4(state[ 0], state[ 4], state[ 8], state[12]);
+            g_x4(state[ 1], state[ 5], state[ 9], state[13]);
+            g_x4(state[ 2], state[ 6], state[10], state[14]);
+            g_x4(state[ 3], state[ 7], state[11], state[15]);
+            g_x4(state[ 0], state[ 5], state[10], state[15]);
+            g_x4(state[ 1], state[ 6], state[11], state[12]);
+            g_x4(state[ 2], state[ 7], state[ 8], state[13]);
+            g_x4(state[ 3], state[ 4], state[ 9], state[14]);
+        }
+    }
+
+    macro_rules! arr {
+        ( load $( $n:expr ),+ ) => {
+            [ $( u64x4::new(state1[$n], state2[$n], state3[$n], state4[$n]) ),+ ]
+        };
+        ( store $s:expr => $( $n:expr ),+ ) => {
+            $(
+                state1[$n] = $s[$n].extract(0);
+                state2[$n] = $s[$n].extract(1);
+                state3[$n] = $s[$n].extract(2);
+                state4[$n] = $s[$n].extract(3);
+            )+
+        }
+    }
+
+    let mut s = arr!(load 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15);
+
+    for _ in 0..L {
+        f_x4(&mut s);
+    }
+
+    arr!(store s => 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15);
 }
 
 
@@ -101,6 +139,44 @@ unsafe fn undiagonalize(a: u64x4, mut b: u64x4, mut c: u64x4, mut d: u64x4) -> (
     b = _mm256_permute4x64_epi64(b.into(), shuffle(2, 1, 0, 3)).into();
     (a, b, c, d)
 }
+
+
+unsafe fn g_x4(mut a: u64x4, mut b: u64x4, mut c: u64x4, mut d: u64x4)
+    -> (u64x4, u64x4, u64x4, u64x4)
+{
+    let (mut t0, mut t1);
+
+    t0 = xor( a,  b);
+    t1 = and( a,  b);
+    t1 = add(t1, t1);
+     a = xor(t0, t1);
+     d = xor( d,  a);
+     d = rot( d, R0);
+
+    t0 = xor( c,  d);
+    t1 = and( c,  d);
+    t1 = add(t1, t1);
+     c = xor(t0, t1);
+     b = xor( b,  c);
+     b = rot( b, R1);
+
+    t0 = xor( a,  b);
+    t1 = and( a,  b);
+    t1 = add(t1, t1);
+     a = xor(t0, t1);
+     d = xor( d,  a);
+     d = rot( d, R2);
+
+    t0 = xor( c,  d);
+    t1 = and( c,  d);
+    t1 = add(t1, t1);
+     c = xor(t0, t1);
+     b = xor( b,  c);
+     b = rot( b, R3);
+
+     (a, b, c, d)
+}
+
 
 #[inline]
 unsafe fn xor(a: u64x4, b: u64x4) -> u64x4 {
