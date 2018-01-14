@@ -36,12 +36,9 @@ pub mod avx2;
 pub const S: usize = 16;
 
 
-#[cfg(not(feature = "simd"))]
-pub use portable::norx;
-
-#[cfg(feature = "simd")]
 #[inline]
 pub fn norx(state: &mut [U; S]) {
+    #[cfg(feature = "simd")]
     #[cfg(feature = "W64")]
     #[cfg(target_feature = "avx2")]
     unsafe {
@@ -50,6 +47,7 @@ pub fn norx(state: &mut [U; S]) {
         }
     }
 
+    #[cfg(feature = "simd")]
     #[cfg(any(feature = "W32", feature = "W64"))]
     #[cfg(target_feature = "ssse3")]
     unsafe {
@@ -61,19 +59,9 @@ pub fn norx(state: &mut [U; S]) {
     portable::norx(state)
 }
 
-
-#[cfg(not(feature = "simd"))]
 #[inline]
 pub fn norx_x4(state1: &mut [U; S], state2: &mut [U; S], state3: &mut [U; S], state4: &mut [U; S]) {
-    norx(state1);
-    norx(state2);
-    norx(state3);
-    norx(state4);
-}
-
-#[cfg(feature = "simd")]
-#[inline]
-pub fn norx_x4(state1: &mut [U; S], state2: &mut [U; S], state3: &mut [U; S], state4: &mut [U; S]) {
+    #[cfg(feature = "simd")]
     #[cfg(feature = "W64")]
     #[cfg(target_feature = "avx2")]
     unsafe {

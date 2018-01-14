@@ -163,9 +163,9 @@ unsafe fn add(a: u64x2, b: u64x2) -> u64x2 {
 #[inline]
 unsafe fn rot(x: u64x2, c: u32) -> u64x2 {
     match c {
-         8 => _mm_shuffle_epi8(x.into(), _mm_set_epi8( 8, 15, 14, 13, 12, 11, 10,  9, 0, 7, 6, 5, 4, 3, 2, 1)).into(),
-        40 => _mm_shuffle_epi8(x.into(), _mm_set_epi8(12, 11, 10,  9,  8, 15, 14, 13, 4, 3, 2, 1, 0, 7, 6, 5)).into(),
-        63 => _mm_or_si128(_mm_add_epi64(x.into(), x.into()), _mm_srli_epi64(x.into(), 63)).into(),
-         _ => _mm_or_si128(_mm_srli_epi64(x.into(), c as i32), _mm_slli_epi64(x.into(), 64 - c as i32)).into()
+         8 => _mm_shuffle_epi8(x.into(), _mm_set_epi8( 8, 15, 14, 13, 12, 11, 10,  9, 0, 7, 6, 5, 4, 3, 2, 1).into()).into(),
+        40 => _mm_shuffle_epi8(x.into(), _mm_set_epi8(12, 11, 10,  9,  8, 15, 14, 13, 4, 3, 2, 1, 0, 7, 6, 5).into()).into(),
+        63 => _mm_or_si128(_mm_add_epi64(x.into(), x.into()).into(), _mm_srli_epi64(x.into(), 63).into()).into(),
+         _ => _mm_or_si128(_mm_srli_epi64(x.into(), c as i32).into(), _mm_slli_epi64(x.into(), 64 - c as i32).into()).into()
     }
 }

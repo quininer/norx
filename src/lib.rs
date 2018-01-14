@@ -7,11 +7,12 @@ use byteorder::LittleEndian;
 pub use permutation::{ U, S };
 
 
-type State = [u8; mem::size_of::<U>() * S];
+const BLOCK_LENGTH: usize = mem::size_of::<U>() * S;
+
+type State = [u8; BLOCK_LENGTH];
 
 pub struct Norx {
     state: State,
-    buf: [u8; 0],
     pos: usize
 }
 
