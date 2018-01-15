@@ -57,6 +57,7 @@ pub fn with<F>(arr: &mut [u8; B], f: F)
     le_from_slice(arr);
 }
 
+#[inline]
 pub fn pad(input: &[u8]) -> [u8; R] {
     assert!(input.len() < R);
 
@@ -71,6 +72,7 @@ pub fn pad(input: &[u8]) -> [u8; R] {
 
 
 pub fn absorb<T: Tag>(state: &mut [u8; B], aad: &[u8]) {
+    #[inline]
     fn absort_block<T: Tag>(state: &mut [u8; B], chunk: &[u8; R]) {
         with(state, |state| {
             state[15] ^= T::TAG;

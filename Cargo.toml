@@ -16,6 +16,9 @@ norx-permutation = { path = "permutation", default-features = false }
 byteorder = "*"
 norx-permutation = { path = "permutation", default-features = false }
 
+[dev-dependencies]
+rand = "*"
+
 [features]
 default = [ "W64", "L4", "P1" ]
 simd = [ "norx-permutation/simd" ]

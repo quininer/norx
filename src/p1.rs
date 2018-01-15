@@ -19,6 +19,13 @@ impl Norx {
 
         Process { state, _mode: Encrypt }
     }
+
+    pub fn decrypt(self, aad: &[u8]) -> Process<Decrypt> {
+        let Norx(mut state) = self;
+        absorb::<tags::Header>(&mut state, aad);
+
+        Process { state, _mode: Decrypt }
+    }
 }
 
 impl Process<Encrypt> {
@@ -47,13 +54,13 @@ impl Process<Encrypt> {
         let (output, tag) = output.split_at_mut(input.len());
         let tag = array_mut_ref!(tag, 0, T);
 
-        let input = pad(input);
+        let input_pad = pad(input);
         with(&mut self.state, |state| {
             state[15] ^= <tags::Payload as Tag>::TAG;
             permutation::norx(state);
         });
         for i in 0..R {
-            self.state[i] ^= input[i];
+            self.state[i] ^= input_pad[i];
         }
         output.copy_from_slice(&self.state[..input.len()]);
 
@@ -74,6 +81,7 @@ impl Process<Decrypt> {
 
             for i in 0..R {
                 output[i] = self.state[i] ^ input[i];
+                self.state[i] = input[i];
             }
         }
     }
@@ -83,7 +91,7 @@ impl Process<Decrypt> {
         assert_eq!(input.len(), output.len() + T);
 
         let (input, tag) = input.split_at(output.len());
-        let mut lastblock = [0; B];
+        let mut lastblock = [0; R];
 
         with(&mut self.state, |state| {
             state[15] ^= <tags::Payload as Tag>::TAG;
@@ -98,6 +106,7 @@ impl Process<Decrypt> {
         for i in 0..input.len() {
             output[i] = self.state[i] ^ lastblock[i];
         }
+        self.state[..R].copy_from_slice(&lastblock);
 
         let mut tag2 = [0; T];
         Norx(self.state).finalize(key, aad, &mut tag2);
