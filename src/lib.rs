@@ -3,6 +3,7 @@
 extern crate core;
 
 #[macro_use] extern crate arrayref;
+extern crate subtle;
 extern crate byteorder;
 extern crate norx_permutation as permutation;
 
