@@ -2,6 +2,7 @@
 name = "norx"
 version = "0.1.0"
 authors = ["quininer <quininer@live.com>"]
+build = "build.rs"
 
 [workspace]
 members = [ "permutation" ]

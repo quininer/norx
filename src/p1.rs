@@ -1,14 +1,11 @@
 use subtle::slices_equal;
 use ::common::{ Tag, tags, with, pad, absorb };
-use ::{
-    permutation,
-    Norx, Encrypt, Decrypt,
-    K, B, T, R
-};
+use ::constant::{ STATE_LENGTH, BLOCK_LENGTH, KEY_LENGTH, TAG_LENGTH };
+use ::{ permutation, Norx, Encrypt, Decrypt };
 
 
 pub struct Process<Mode> {
-    state: [u8; B],
+    state: [u8; STATE_LENGTH],
     _mode: Mode
 }
 
@@ -30,7 +27,7 @@ impl Norx {
 
 impl Process<Encrypt> {
     pub fn process<'a, I>(&mut self, bufs: I)
-        where I: Iterator<Item = (&'a [u8; R], &'a mut [u8; R])>
+        where I: Iterator<Item = (&'a [u8; BLOCK_LENGTH], &'a mut [u8; BLOCK_LENGTH])>
     {
         for (input, output) in bufs {
             with(&mut self.state, |state| {
@@ -39,27 +36,27 @@ impl Process<Encrypt> {
                 permutation::norx(state);
             });
 
-            for i in 0..R {
+            for i in 0..BLOCK_LENGTH {
                 self.state[i] ^= input[i];
             }
 
-            output.copy_from_slice(&self.state[..R]);
+            output.copy_from_slice(&self.state[..BLOCK_LENGTH]);
         }
     }
 
-    pub fn finalize(mut self, key: &[u8; K], aad: &[u8], input: &[u8], output: &mut [u8]) {
-        assert!(input.len() < R);
-        assert_eq!(input.len() + T, output.len());
+    pub fn finalize(mut self, key: &[u8; KEY_LENGTH], aad: &[u8], input: &[u8], output: &mut [u8]) {
+        assert!(input.len() < BLOCK_LENGTH);
+        assert_eq!(input.len() + TAG_LENGTH, output.len());
 
         let (output, tag) = output.split_at_mut(input.len());
-        let tag = array_mut_ref!(tag, 0, T);
+        let tag = array_mut_ref!(tag, 0, TAG_LENGTH);
 
         let input_pad = pad(input);
         with(&mut self.state, |state| {
             state[15] ^= <tags::Payload as Tag>::TAG;
             permutation::norx(state);
         });
-        for i in 0..R {
+        for i in 0..BLOCK_LENGTH {
             self.state[i] ^= input_pad[i];
         }
         output.copy_from_slice(&self.state[..input.len()]);
@@ -70,7 +67,7 @@ impl Process<Encrypt> {
 
 impl Process<Decrypt> {
     pub fn process<'a, I>(&mut self, bufs: I)
-        where I: Iterator<Item = (&'a [u8; R], &'a mut [u8; R])>
+        where I: Iterator<Item = (&'a [u8; BLOCK_LENGTH], &'a mut [u8; BLOCK_LENGTH])>
     {
         for (input, output) in bufs {
             with(&mut self.state, |state| {
@@ -79,36 +76,36 @@ impl Process<Decrypt> {
                 permutation::norx(state);
             });
 
-            for i in 0..R {
+            for i in 0..BLOCK_LENGTH {
                 output[i] = self.state[i] ^ input[i];
                 self.state[i] = input[i];
             }
         }
     }
 
-    pub fn finalize(mut self, key: &[u8; K], aad: &[u8], input: &[u8], output: &mut [u8]) -> bool {
-        assert!(output.len() < R);
-        assert_eq!(input.len(), output.len() + T);
+    pub fn finalize(mut self, key: &[u8; KEY_LENGTH], aad: &[u8], input: &[u8], output: &mut [u8]) -> bool {
+        assert!(output.len() < BLOCK_LENGTH);
+        assert_eq!(input.len(), output.len() + TAG_LENGTH);
 
         let (input, tag) = input.split_at(output.len());
-        let mut lastblock = [0; R];
+        let mut lastblock = [0; BLOCK_LENGTH];
 
         with(&mut self.state, |state| {
             state[15] ^= <tags::Payload as Tag>::TAG;
             permutation::norx(state);
         });
 
-        lastblock.copy_from_slice(&self.state[..R]);
+        lastblock.copy_from_slice(&self.state[..BLOCK_LENGTH]);
         lastblock[..input.len()].copy_from_slice(input);
         lastblock[input.len()] ^= 0x01;
-        lastblock[R - 1] ^= 0x80;
+        lastblock[BLOCK_LENGTH - 1] ^= 0x80;
 
         for i in 0..input.len() {
             output[i] = self.state[i] ^ lastblock[i];
         }
-        self.state[..R].copy_from_slice(&lastblock);
+        self.state[..BLOCK_LENGTH].copy_from_slice(&lastblock);
 
-        let mut tag2 = [0; T];
+        let mut tag2 = [0; TAG_LENGTH];
         Norx(self.state).finalize(key, aad, &mut tag2);
 
         slices_equal(tag, &tag2) == 1

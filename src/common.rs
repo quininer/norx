@@ -1,6 +1,7 @@
 use core::mem;
 use byteorder::{ LittleEndian, ByteOrder };
-use ::{ permutation, B, U, S, R };
+use ::constant::{ U, S, STATE_LENGTH, BLOCK_LENGTH };
+use ::permutation;
 
 
 pub trait Tag {
@@ -9,7 +10,7 @@ pub trait Tag {
 
 #[allow(dead_code)]
 pub mod tags {
-    use ::U;
+    use super::U;
     use super::Tag;
 
     macro_rules! tags {
@@ -36,11 +37,11 @@ pub mod tags {
 }
 
 
-pub fn with<F>(arr: &mut [u8; B], f: F)
+pub fn with<F>(arr: &mut [u8; STATE_LENGTH], f: F)
     where F: FnOnce(&mut [U; S])
 {
     #[inline]
-    fn array_as_block(arr: &mut [u8; B]) -> &mut [U; S] {
+    fn array_as_block(arr: &mut [u8; STATE_LENGTH]) -> &mut [U; S] {
         unsafe { mem::transmute(arr) }
     }
 
@@ -58,36 +59,36 @@ pub fn with<F>(arr: &mut [u8; B], f: F)
 }
 
 #[inline]
-pub fn pad(input: &[u8]) -> [u8; R] {
-    assert!(input.len() < R);
+pub fn pad(input: &[u8]) -> [u8; BLOCK_LENGTH] {
+    assert!(input.len() < BLOCK_LENGTH);
 
-    let mut output = [0; R];
+    let mut output = [0; BLOCK_LENGTH];
 
     output[..input.len()].copy_from_slice(input);
     output[input.len()] = 0x01;
-    output[R - 1] |= 0x80;
+    output[BLOCK_LENGTH - 1] |= 0x80;
 
     output
 }
 
 
-pub fn absorb<T: Tag>(state: &mut [u8; B], aad: &[u8]) {
+pub fn absorb<T: Tag>(state: &mut [u8; STATE_LENGTH], aad: &[u8]) {
     #[inline]
-    fn absort_block<T: Tag>(state: &mut [u8; B], chunk: &[u8; R]) {
+    fn absort_block<T: Tag>(state: &mut [u8; STATE_LENGTH], chunk: &[u8; BLOCK_LENGTH]) {
         with(state, |state| {
             state[15] ^= T::TAG;
             permutation::norx(state);
         });
 
-        for i in 0..R {
+        for i in 0..BLOCK_LENGTH {
             state[i] ^= chunk[i];
         }
     }
 
-    let (aad, remaining) = aad.split_at(aad.len() - aad.len() % R);
+    let (aad, remaining) = aad.split_at(aad.len() - aad.len() % BLOCK_LENGTH);
 
-    for chunk in aad.chunks(R) {
-        let chunk = array_ref!(chunk, 0, R);
+    for chunk in aad.chunks(BLOCK_LENGTH) {
+        let chunk = array_ref!(chunk, 0, BLOCK_LENGTH);
         absort_block::<T>(state, chunk);
     }
 

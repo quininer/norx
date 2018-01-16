@@ -3,32 +3,31 @@ use ::rot_const::*;
 
 
 pub fn norx(state: &mut [U; S]) {
-    /// The full round
-    fn f(state: &mut [U; S]) {
-        macro_rules! G {
-            ( $a:expr, $b:expr, $c:expr, $d:expr ) => {
-                let (a, b, c, d) = g($a, $b, $c, $d);
-                $a = a; $b = b; $c = c; $d = d;
-            }
-        }
-
-        // Column step
-        G!(state[ 0], state[ 4], state[ 8], state[12]);
-        G!(state[ 1], state[ 5], state[ 9], state[13]);
-        G!(state[ 2], state[ 6], state[10], state[14]);
-        G!(state[ 3], state[ 7], state[11], state[15]);
-        // Diagonal step
-        G!(state[ 0], state[ 5], state[10], state[15]);
-        G!(state[ 1], state[ 6], state[11], state[12]);
-        G!(state[ 2], state[ 7], state[ 8], state[13]);
-        G!(state[ 3], state[ 4], state[ 9], state[14]);
-    }
-
     for _ in 0..L {
         f(state);
     }
 }
 
+/// The full round
+pub fn f(state: &mut [U; S]) {
+    macro_rules! G {
+        ( $a:expr, $b:expr, $c:expr, $d:expr ) => {
+            let (a, b, c, d) = g($a, $b, $c, $d);
+            $a = a; $b = b; $c = c; $d = d;
+        }
+    }
+
+    // Column step
+    G!(state[ 0], state[ 4], state[ 8], state[12]);
+    G!(state[ 1], state[ 5], state[ 9], state[13]);
+    G!(state[ 2], state[ 6], state[10], state[14]);
+    G!(state[ 3], state[ 7], state[11], state[15]);
+    // Diagonal step
+    G!(state[ 0], state[ 5], state[10], state[15]);
+    G!(state[ 1], state[ 6], state[11], state[12]);
+    G!(state[ 2], state[ 7], state[ 8], state[13]);
+    G!(state[ 3], state[ 4], state[ 9], state[14]);
+}
 
 /// The nonlinear primitive
 #[inline]

@@ -13,71 +13,36 @@ mod common;
 #[path = "p1.rs"]
 mod imp;
 
-use core::mem;
+pub mod constant;
+
 use common::{ Tag, tags, with, absorb };
-pub use permutation::{ U, S, L };
+use constant::{ W, STATE_LENGTH, KEY_LENGTH, NONCE_LENGTH, TAG_LENGTH };
 pub use imp::Process;
 
 
-#[cfg(feature = "P1")]
-/// Parallelism degree
-pub const P: usize = 1;
-
-#[cfg(feature = "P4")]
-/// Parallelism degree
-pub const P: usize = 4;
-
-/// Word size
-pub const W: usize = mem::size_of::<U>();
-
-/// Tag size
-pub const T: usize = W * 4;
-
-/// Nonce size
-pub const N: usize = W * 4;
-
-/// Key size
-pub const K: usize = W * 4;
-
-/// Permutation width
-pub const B: usize = W * S;
-
-/// Capacity
-pub const C: usize = W * 4;
-
-/// Rate
-pub const R: usize = B - C;
-
 #[derive(Clone)]
-pub struct Norx([u8; B]);
+pub struct Norx([u8; STATE_LENGTH]);
 pub struct Encrypt;
 pub struct Decrypt;
 
 impl Norx {
-    pub fn new(key: &[u8; K], nonce: &[u8; N]) -> Norx {
+    pub fn new(key: &[u8; KEY_LENGTH], nonce: &[u8; NONCE_LENGTH]) -> Norx {
         // TODO use CTFE https://github.com/rust-lang/rust/issues/24111
-        let mut state = include!("constant.rs");
+        let mut state = include!("init_state.rs");
 
-        state[..N].copy_from_slice(nonce);
-        state[N..][..K].copy_from_slice(key);
+        state[..NONCE_LENGTH].copy_from_slice(nonce);
+        state[NONCE_LENGTH..][..KEY_LENGTH].copy_from_slice(key);
 
-        with(&mut state, |state| {
-            state[12] = W as U;
-            state[13] = L as U;
-            state[14] = P as U;
-            state[15] = T as U;
+        with(&mut state, permutation::norx);
 
-            permutation::norx(state);
-        });
-
-        for i in 0..K {
-            state[N..][K..][i] ^= key[i];
+        for i in 0..KEY_LENGTH {
+            state[(12 * W / 8)..][i] ^= key[i];
         }
 
         Norx(state)
     }
 
-    fn finalize(self, key: &[u8; K], aad: &[u8], tag: &mut [u8; T]) {
+    fn finalize(self, key: &[u8; KEY_LENGTH], aad: &[u8], tag: &mut [u8; TAG_LENGTH]) {
         let Norx(mut state) = self;
 
         absorb::<tags::Final>(&mut state, aad);
@@ -88,14 +53,14 @@ impl Norx {
             permutation::norx(state);
         });
 
-        for i in 0..K {
-            state[N + K..][i] ^= key[i];
+        for i in 0..KEY_LENGTH {
+            state[(12 * W / 8)..][i] ^= key[i];
         }
 
         with(&mut state, permutation::norx);
 
-        for i in 0..K {
-            tag[i] = state[N + K..][i] ^ key[i];
+        for i in 0..KEY_LENGTH {
+            tag[i] = state[(12 * W / 8)..][i] ^ key[i];
         }
     }
 }

@@ -6,17 +6,17 @@ mod aead;
 
 use rand::{ Rng, thread_rng, random };
 use aead::{ aead_encrypt, aead_decrypt };
-use norx::{ K, N, T };
+use norx::constant::{ KEY_LENGTH, NONCE_LENGTH, TAG_LENGTH };
 
 
 #[test]
 fn test_aead() {
     for _ in 0..100 {
-        let mut key = [0; K];
-        let mut nonce = [0; N];
+        let mut key = [0; KEY_LENGTH];
+        let mut nonce = [0; NONCE_LENGTH];
         let mut aad = vec![0; (random::<usize>() % 128) + 1];
-        let mut m = vec![0; (random::<usize>() % 256) + 1];
-        let mut c = vec![0; m.len() + T];
+        let mut m = vec![0; (random::<usize>() % 1024) + 1];
+        let mut c = vec![0; m.len() + TAG_LENGTH];
         let mut p = vec![0; m.len()];
 
         thread_rng().fill_bytes(&mut key);
