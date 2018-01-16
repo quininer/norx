@@ -2,23 +2,28 @@
 name = "norx"
 version = "0.1.0"
 authors = ["quininer <quininer@live.com>"]
+description = "A Parallel and Scalable Authenticated Encryption Algorithm"
+repository = "https://github.com/quininer/norx"
+keywords = [ "cryptography", "aead" ]
+categories = [ "cryptography", "no-std" ]
+license = "MIT"
 build = "build.rs"
 
 [workspace]
 members = [ "permutation" ]
 
 [dependencies]
-arrayref = "*"
-subtle= { version = "*", default-features = false }
-byteorder = { version = "*", default-features = false }
-norx-permutation = { path = "permutation", default-features = false }
+arrayref = "0.3"
+subtle= { version = "0.3", default-features = false }
+byteorder = { version = "1.0", default-features = false }
+norx-permutation = { version = "0.1.1", path = "permutation", default-features = false }
 
 [build-dependencies]
-byteorder = "*"
-norx-permutation = { path = "permutation", default-features = false }
+byteorder = { version = "1.0", default-features = false }
+norx-permutation = { version = "0.1.1", path = "permutation", default-features = false }
 
 [dev-dependencies]
-rand = "*"
+rand = "0.4"
 
 [features]
 default = [ "W64", "L4", "P1" ]

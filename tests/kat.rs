@@ -1,3 +1,5 @@
+#![cfg_attr(feature = "cargo-clippy", allow(needless_range_loop))]
+
 #[macro_use] extern crate arrayref;
 extern crate rand;
 extern crate norx;
@@ -9,16 +11,16 @@ use norx::constant::{ KEY_LENGTH, NONCE_LENGTH, TAG_LENGTH };
 use aead::aead_encrypt;
 
 #[cfg(all(feature = "W32", feature = "L4", feature = "P1"))]
-const KAT: [u8; 36736] = include!("kat_config_3241.txt");
+const KAT: [u8; 36_736] = include!("kat_config_3241.txt");
 
 #[cfg(all(feature = "W32", feature = "L6", feature = "P1"))]
-const KAT: [u8; 36736] = include!("kat_config_3261.txt");
+const KAT: [u8; 36_736] = include!("kat_config_3261.txt");
 
 #[cfg(all(feature = "W64", feature = "L4", feature = "P1"))]
-const KAT: [u8; 40832] = include!("kat_config_6441.txt");
+const KAT: [u8; 40_832] = include!("kat_config_6441.txt");
 
 #[cfg(all(feature = "W64", feature = "L6", feature = "P1"))]
-const KAT: [u8; 40832] = include!("kat_config_6461.txt");
+const KAT: [u8; 40_832] = include!("kat_config_6461.txt");
 
 #[test]
 fn test_aead_kat() {

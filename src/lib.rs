@@ -1,6 +1,5 @@
-#![allow(dead_code)]
-
-extern crate core;
+#![no_std]
+#![cfg_attr(feature = "cargo-clippy", allow(needless_range_loop))]
 
 #[macro_use] extern crate arrayref;
 extern crate subtle;
