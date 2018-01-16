@@ -85,6 +85,8 @@ pub fn absorb<T: Tag>(state: &mut [u8; STATE_LENGTH], aad: &[u8]) {
         }
     }
 
+    if aad.is_empty() { return () };
+
     let (aad, remaining) = aad.split_at(aad.len() - aad.len() % BLOCK_LENGTH);
 
     for chunk in aad.chunks(BLOCK_LENGTH) {

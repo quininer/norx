@@ -45,11 +45,10 @@ impl Norx {
     fn finalize(self, key: &[u8; KEY_LENGTH], aad: &[u8], tag: &mut [u8; TAG_LENGTH]) {
         let Norx(mut state) = self;
 
-        absorb::<tags::Final>(&mut state, aad);
+        absorb::<tags::Trailer>(&mut state, aad);
 
         with(&mut state, |state| {
             state[15] ^= <tags::Final as Tag>::TAG;
-
             permutation::norx(state);
         });
 
