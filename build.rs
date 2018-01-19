@@ -37,7 +37,7 @@ fn init() -> [u8; STATE_LENGTH] {
 }
 
 fn main() {
-    let dir = env::var("CARGO_MANIFEST_DIR").unwrap();
-    let mut p = fs::File::create(PathBuf::from(dir).join("src").join("init_state.rs")).unwrap();
+    let dir = env::var("OUT_DIR").unwrap();
+    let mut p = fs::File::create(PathBuf::from(dir).join("init_state.rs")).unwrap();
     write!(p, "{:?}", &init()[..]).unwrap();
 }

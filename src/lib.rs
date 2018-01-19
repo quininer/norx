@@ -27,7 +27,7 @@ pub struct Decrypt;
 impl Norx {
     pub fn new(key: &[u8; KEY_LENGTH], nonce: &[u8; NONCE_LENGTH]) -> Norx {
         // TODO use CTFE https://github.com/rust-lang/rust/issues/24111
-        let mut state = include!("init_state.rs");
+        let mut state = include!(concat!(env!("OUT_DIR"), "/", "init_state.rs"));
 
         state[..NONCE_LENGTH].copy_from_slice(nonce);
         state[NONCE_LENGTH..][..KEY_LENGTH].copy_from_slice(key);
@@ -41,12 +41,12 @@ impl Norx {
         Norx(state)
     }
 
-    fn finalize(self, key: &[u8; KEY_LENGTH], aad: &[u8], tag: &mut [u8; TAG_LENGTH]) {
-        let Norx(mut state) = self;
+    fn finalize(mut self, key: &[u8; KEY_LENGTH], aad: &[u8], tag: &mut [u8; TAG_LENGTH]) {
+        let Norx(ref mut state) = self;
 
-        absorb::<tags::Trailer>(&mut state, aad);
+        absorb::<tags::Trailer>(state, aad);
 
-        with(&mut state, |state| {
+        with(state, |state| {
             state[15] ^= <tags::Final as Tag>::TAG;
             permutation::norx(state);
         });
@@ -55,10 +55,12 @@ impl Norx {
             state[(12 * W / 8)..][i] ^= key[i];
         }
 
-        with(&mut state, permutation::norx);
+        with(state, permutation::norx);
 
         for i in 0..KEY_LENGTH {
             tag[i] = state[(12 * W / 8)..][i] ^ key[i];
         }
+
+        // TODO zero state
     }
 }

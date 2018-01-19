@@ -1,4 +1,3 @@
 **/target/
 **/*.rs.bk
-src/init_state.rs
 Cargo.lock
