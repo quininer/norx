@@ -1,9 +1,5 @@
 #![no_std]
-#![cfg_attr(feature = "simd", feature(cfg_target_feature))]
-
-#[cfg(feature = "simd")]
-#[macro_use]
-extern crate coresimd;
+#![cfg_attr(feature = "simd", feature(cfg_target_feature, stdsimd))]
 
 pub mod portable;
 
@@ -42,18 +38,18 @@ pub fn norx(state: &mut [U; S]) {
     #[cfg(feature = "W64")]
     #[cfg(target_feature = "avx2")]
     unsafe {
-        if cfg_feature_enabled!("avx2") {
-            return avx2::norx(state);
-        }
+//        if cfg_feature_enabled!("avx2") {
+//            return avx2::norx(state);
+//        }
     }
 
     #[cfg(feature = "simd")]
     #[cfg(any(feature = "W32", feature = "W64"))]
     #[cfg(target_feature = "ssse3")]
     unsafe {
-        if cfg_feature_enabled!("ssse3") {
-            return ssse3::norx(state);
-        }
+//        if cfg_feature_enabled!("ssse3") {
+//            return ssse3::norx(state);
+//        }
     }
 
     portable::norx(state)
@@ -65,9 +61,9 @@ pub fn norx_x4(state1: &mut [U; S], state2: &mut [U; S], state3: &mut [U; S], st
     #[cfg(feature = "W64")]
     #[cfg(target_feature = "avx2")]
     unsafe {
-        if cfg_feature_enabled!("avx2") {
-            return avx2::norx_x4(state1, state2, state3, state4);
-        }
+//        if cfg_feature_enabled!("avx2") {
+//            return avx2::norx_x4(state1, state2, state3, state4);
+//        }
     }
 
     norx(state1);

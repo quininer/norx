@@ -7,11 +7,10 @@ repository = "https://github.com/quininer/norx"
 license = "MIT"
 
 [dependencies]
-coresimd = { version = "0.0.4", optional = true }
 
 [features]
 default = [ "W64", "L4" ]
-simd = [ "coresimd" ]
+simd = []
 W8 = []
 W16 = []
 W32 = []
