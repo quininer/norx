@@ -1,23 +1,25 @@
 #![no_std]
-#![cfg_attr(feature = "simd", feature(cfg_target_feature, stdsimd))]
+#![cfg_attr(feature = "simd", feature(target_feature, cfg_target_feature, stdsimd))]
+
+// FIXME `is_x86_feature_detected!` missing in `core`.
+#[cfg(feature = "simd")]
+#[macro_use]
+extern crate std;
 
 pub mod portable;
 
 #[cfg(feature = "simd")]
 #[cfg(feature = "W32")]
-#[cfg(target_feature = "ssse3")]
 #[path = "x32_ssse3.rs"]
 pub mod ssse3;
 
 #[cfg(feature = "simd")]
 #[cfg(feature = "W64")]
-#[cfg(target_feature = "ssse3")]
 #[path = "x64_ssse3.rs"]
 pub mod ssse3;
 
 #[cfg(feature = "simd")]
 #[cfg(feature = "W64")]
-#[cfg(target_feature = "avx2")]
 #[path = "x64_avx2.rs"]
 pub mod avx2;
 
@@ -36,20 +38,20 @@ pub const S: usize = 16;
 pub fn norx(state: &mut [U; S]) {
     #[cfg(feature = "simd")]
     #[cfg(feature = "W64")]
-    #[cfg(target_feature = "avx2")]
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     unsafe {
-//        if cfg_feature_enabled!("avx2") {
-//            return avx2::norx(state);
-//        }
+        if is_x86_feature_detected!("avx2") {
+            return avx2::norx(state);
+        }
     }
 
     #[cfg(feature = "simd")]
     #[cfg(any(feature = "W32", feature = "W64"))]
-    #[cfg(target_feature = "ssse3")]
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     unsafe {
-//        if cfg_feature_enabled!("ssse3") {
-//            return ssse3::norx(state);
-//        }
+        if is_x86_feature_detected!("ssse3") {
+            return ssse3::norx(state);
+        }
     }
 
     portable::norx(state)
@@ -59,11 +61,11 @@ pub fn norx(state: &mut [U; S]) {
 pub fn norx_x4(state1: &mut [U; S], state2: &mut [U; S], state3: &mut [U; S], state4: &mut [U; S]) {
     #[cfg(feature = "simd")]
     #[cfg(feature = "W64")]
-    #[cfg(target_feature = "avx2")]
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     unsafe {
-//        if cfg_feature_enabled!("avx2") {
-//            return avx2::norx_x4(state1, state2, state3, state4);
-//        }
+        if is_x86_feature_detected!("avx2") {
+            return avx2::norx_x4(state1, state2, state3, state4);
+        }
     }
 
     norx(state1);

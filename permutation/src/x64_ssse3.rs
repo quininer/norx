@@ -40,6 +40,7 @@ macro_rules! rot {
 }
 
 
+#[target_feature(enable = "ssse3")]
 pub unsafe fn norx(state: &mut [U; S]) {
     unsafe fn f(state: &mut [u64x2; 8]) {
         macro_rules! EX {
