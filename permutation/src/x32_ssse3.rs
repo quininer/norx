@@ -1,4 +1,4 @@
-use core::simd::{ IntoBits, u32x4 };
+use core::simd::{ FromBits, IntoBits, u32x4 };
 use core::arch::x86_64::{
     _mm_xor_si128, _mm_and_si128,
     _mm_add_epi32, _mm_or_si128,
@@ -13,6 +13,24 @@ use ::rot_const::*;
 macro_rules! shuffle {
     ( $fp3:expr, $fp2:expr, $fp1:expr, $fp0:expr ) => {
         ($fp3 << 6) | ($fp2 << 4) | ($fp1 << 2) | $fp0
+    }
+}
+
+macro_rules! xor {
+    ( $a:expr, $b:expr ) => {
+        u32x4::from_bits(_mm_xor_si128($a.into_bits(), $b.into_bits()));
+    }
+}
+
+macro_rules! and {
+    ( $a:expr, $b:expr ) => {
+        u32x4::from_bits(_mm_and_si128($a.into_bits(), $b.into_bits()))
+    }
+}
+
+macro_rules! add {
+    ( $a:expr, $b:expr ) => {
+        u32x4::from_bits(_mm_add_epi32($a.into_bits(), $b.into_bits()))
     }
 }
 
@@ -87,36 +105,36 @@ unsafe fn g(mut a: u32x4, mut b: u32x4, mut c: u32x4, mut d: u32x4)
 {
     let (mut t0, mut t1);
 
-    t0 = xor( a,  b);
-    t1 = and( a,  b);
-    t1 = add(t1, t1);
-     a = xor(t0, t1);
-     d = xor( d, t0);
-     d = xor( d, t1);
+    t0 = xor!( a,  b);
+    t1 = and!( a,  b);
+    t1 = add!(t1, t1);
+     a = xor!(t0, t1);
+     d = xor!( d, t0);
+     d = xor!( d, t1);
      d = rot!( d, R0);
 
-    t0 = xor( c,  d);
-    t1 = and( c,  d);
-    t1 = add(t1, t1);
-     c = xor(t0, t1);
-     b = xor( b, t0);
-     b = xor( b, t1);
+    t0 = xor!( c,  d);
+    t1 = and!( c,  d);
+    t1 = add!(t1, t1);
+     c = xor!(t0, t1);
+     b = xor!( b, t0);
+     b = xor!( b, t1);
      b = rot!( b, R1);
 
-    t0 = xor( a,  b);
-    t1 = and( a,  b);
-    t1 = add(t1, t1);
-     a = xor(t0, t1);
-     d = xor( d, t0);
-     d = xor( d, t1);
+    t0 = xor!( a,  b);
+    t1 = and!( a,  b);
+    t1 = add!(t1, t1);
+     a = xor!(t0, t1);
+     d = xor!( d, t0);
+     d = xor!( d, t1);
      d = rot!( d, R2);
 
-    t0 = xor( c,  d);
-    t1 = and( c,  d);
-    t1 = add(t1, t1);
-     c = xor(t0, t1);
-     b = xor( b, t0);
-     b = xor( b, t1);
+    t0 = xor!( c,  d);
+    t1 = and!( c,  d);
+    t1 = add!(t1, t1);
+     c = xor!(t0, t1);
+     b = xor!( b, t0);
+     b = xor!( b, t1);
      b = rot!( b, R3);
 
      (a, b, c, d)
@@ -134,19 +152,4 @@ unsafe fn undiagonalize(a: u32x4, mut b: u32x4, mut c: u32x4, mut d: u32x4) -> (
     c = _mm_shuffle_epi32(c.into_bits(), shuffle!(1, 0, 3, 2)).into_bits();
     b = _mm_shuffle_epi32(b.into_bits(), shuffle!(2, 1, 0, 3)).into_bits();
     (a, b, c, d)
-}
-
-#[inline]
-unsafe fn xor(a: u32x4, b: u32x4) -> u32x4 {
-    _mm_xor_si128(a.into_bits(), b.into_bits()).into_bits()
-}
-
-#[inline]
-unsafe fn and(a: u32x4, b: u32x4) -> u32x4 {
-    _mm_and_si128(a.into_bits(), b.into_bits()).into_bits()
-}
-
-#[inline]
-unsafe fn add(a: u32x4, b: u32x4) -> u32x4 {
-    _mm_add_epi32(a.into_bits(), b.into_bits()).into_bits()
 }

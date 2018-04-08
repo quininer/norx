@@ -1,6 +1,6 @@
 #![cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
 
-use core::simd::{ IntoBits, u64x2 };
+use core::simd::{ FromBits, IntoBits, u64x2 };
 use core::arch::x86_64::{
     _mm_xor_si128, _mm_add_epi64,
     _mm_and_si128, _mm_or_si128,
@@ -11,6 +11,25 @@ use core::arch::x86_64::{
 use ::{ U, S, L };
 use ::rot_const::*;
 
+
+
+macro_rules! xor {
+    ( $a:expr, $b:expr ) => {
+        u64x2::from_bits(_mm_xor_si128($a.into_bits(), $b.into_bits()));
+    }
+}
+
+macro_rules! and {
+    ( $a:expr, $b:expr ) => {
+        u64x2::from_bits(_mm_and_si128($a.into_bits(), $b.into_bits()))
+    }
+}
+
+macro_rules! add {
+    ( $a:expr, $b:expr ) => {
+        u64x2::from_bits(_mm_add_epi64($a.into_bits(), $b.into_bits()))
+    }
+}
 
 macro_rules! rot {
     ( $x:expr, R0 ) => {
@@ -95,32 +114,32 @@ unsafe fn g(
 ) -> (u64x2, u64x2, u64x2, u64x2, u64x2, u64x2,u64x2, u64x2) {
     let (mut l0, mut l1, mut r0, mut r1);
 
-    l0 = xor(a0, b0);    r0 = xor(a1, b1);
-    l1 = and(a0, b0);    r1 = and(a1, b1);
-    l1 = add(l1, l1);    r1 = add(r1, r1);
-    a0 = xor(l0, l1);    a1 = xor(r0, r1);
-    d0 = xor(d0, a0);    d1 = xor(d1, a1);
+    l0 = xor!(a0, b0);    r0 = xor!(a1, b1);
+    l1 = and!(a0, b0);    r1 = and!(a1, b1);
+    l1 = add!(l1, l1);    r1 = add!(r1, r1);
+    a0 = xor!(l0, l1);    a1 = xor!(r0, r1);
+    d0 = xor!(d0, a0);    d1 = xor!(d1, a1);
     d0 = rot!(d0, R0);    d1 = rot!(d1, R0);
 
-    l0 = xor(c0, d0);    r0 = xor(c1, d1);
-    l1 = and(c0, d0);    r1 = and(c1, d1);
-    l1 = add(l1, l1);    r1 = add(r1, r1);
-    c0 = xor(l0, l1);    c1 = xor(r0, r1);
-    b0 = xor(b0, c0);    b1 = xor(b1, c1);
+    l0 = xor!(c0, d0);    r0 = xor!(c1, d1);
+    l1 = and!(c0, d0);    r1 = and!(c1, d1);
+    l1 = add!(l1, l1);    r1 = add!(r1, r1);
+    c0 = xor!(l0, l1);    c1 = xor!(r0, r1);
+    b0 = xor!(b0, c0);    b1 = xor!(b1, c1);
     b0 = rot!(b0, R1);    b1 = rot!(b1, R1);
 
-    l0 = xor(a0, b0);    r0 = xor(a1, b1);
-    l1 = and(a0, b0);    r1 = and(a1, b1);
-    l1 = add(l1, l1);    r1 = add(r1, r1);
-    a0 = xor(l0, l1);    a1 = xor(r0, r1);
-    d0 = xor(d0, a0);    d1 = xor(d1, a1);
+    l0 = xor!(a0, b0);    r0 = xor!(a1, b1);
+    l1 = and!(a0, b0);    r1 = and!(a1, b1);
+    l1 = add!(l1, l1);    r1 = add!(r1, r1);
+    a0 = xor!(l0, l1);    a1 = xor!(r0, r1);
+    d0 = xor!(d0, a0);    d1 = xor!(d1, a1);
     d0 = rot!(d0, R2);    d1 = rot!(d1, R2);
 
-    l0 = xor(c0, d0);    r0 = xor(c1, d1);
-    l1 = and(c0, d0);    r1 = and(c1, d1);
-    l1 = add(l1, l1);    r1 = add(r1, r1);
-    c0 = xor(l0, l1);    c1 = xor(r0, r1);
-    b0 = xor(b0, c0);    b1 = xor(b1, c1);
+    l0 = xor!(c0, d0);    r0 = xor!(c1, d1);
+    l1 = and!(c0, d0);    r1 = and!(c1, d1);
+    l1 = add!(l1, l1);    r1 = add!(r1, r1);
+    c0 = xor!(l0, l1);    c1 = xor!(r0, r1);
+    b0 = xor!(b0, c0);    b1 = xor!(b1, c1);
     b0 = rot!(b0, R3);    b1 = rot!(b1, R3);
 
     (a0, a1, b0, b1, c0, c1, d0, d1)
@@ -171,20 +190,4 @@ unsafe fn undiagonalize(
     d1 = t0;
 
     (a0, a1, b0, b1, c0, c1, d0, d1)
-}
-
-
-#[inline]
-unsafe fn xor(a: u64x2, b: u64x2) -> u64x2 {
-    _mm_xor_si128(a.into_bits(), b.into_bits()).into_bits()
-}
-
-#[inline]
-unsafe fn and(a: u64x2, b: u64x2) -> u64x2 {
-    _mm_and_si128(a.into_bits(), b.into_bits()).into_bits()
-}
-
-#[inline]
-unsafe fn add(a: u64x2, b: u64x2) -> u64x2 {
-    _mm_add_epi64(a.into_bits(), b.into_bits()).into_bits()
 }

@@ -10,16 +10,19 @@ pub mod portable;
 
 #[cfg(feature = "simd")]
 #[cfg(feature = "W32")]
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 #[path = "x32_ssse3.rs"]
 pub mod ssse3;
 
 #[cfg(feature = "simd")]
 #[cfg(feature = "W64")]
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 #[path = "x64_ssse3.rs"]
 pub mod ssse3;
 
 #[cfg(feature = "simd")]
 #[cfg(feature = "W64")]
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 #[path = "x64_avx2.rs"]
 pub mod avx2;
 
