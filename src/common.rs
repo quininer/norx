@@ -17,7 +17,7 @@ pub mod tags {
         ( $( $( #[$attr:meta] )* $name:ident => $val:expr ),+ ) => {
             $(
                 $( #[$attr] )*
-                pub struct $name;
+                pub enum $name {}
 
                 impl Tag for $name {
                     const TAG: U = $val;
@@ -96,4 +96,28 @@ pub fn absorb<T: Tag>(state: &mut [u8; STATE_LENGTH], aad: &[u8]) {
 
     let chunk = pad(remaining);
     absort_block::<T>(state, &chunk);
+}
+
+#[cfg(feature = "P4")]
+pub fn branch(state: &mut [u8; STATE_LENGTH], lane: U) {
+    with(state, |state| {
+        state[15] ^= tags::Branch::TAG;
+        permutation::norx(state);
+
+        for s in state {
+            *s ^= lane;
+        }
+    });
+}
+
+#[cfg(feature = "P4")]
+pub fn merge(state1: &mut [u8; STATE_LENGTH], state2: &mut [u8; STATE_LENGTH]) {
+    with(state1, |state1| with(state2, |state2| {
+        state2[15] ^= tags::Merge::TAG;
+        permutation::norx(state2);
+
+        for i in 0..16 {
+            state2[i] ^= state1[i];
+        }
+    }));
 }

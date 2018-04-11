@@ -12,6 +12,10 @@ mod common;
 #[path = "p1.rs"]
 mod imp;
 
+#[cfg(feature = "P4")]
+#[path = "p4.rs"]
+mod imp;
+
 pub mod constant;
 
 use common::{ Tag, tags, with, absorb };
