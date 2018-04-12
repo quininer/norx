@@ -1,6 +1,6 @@
 use core::mem;
 use byteorder::{ LittleEndian, ByteOrder };
-use ::constant::{ U, S, STATE_LENGTH, BLOCK_LENGTH };
+use ::constant::{ U, R, W, S, STATE_LENGTH, BLOCK_LENGTH };
 use ::permutation;
 
 
@@ -109,12 +109,14 @@ pub fn absorb<T: Tag>(state: &mut [u8; STATE_LENGTH], aad: &[u8]) {
 
 #[cfg(feature = "P4")]
 pub fn branch(state: &mut [u8; STATE_LENGTH], lane: U) {
+    const CAPACITY: usize = R / W;
+
     with(state, |state| {
         state[15] ^= tags::Branch::TAG;
         permutation::norx(state);
 
-        for s in state {
-            *s ^= lane;
+        for i in 0..CAPACITY {
+            state[i] ^= lane;
         }
     });
 }
@@ -127,4 +129,26 @@ pub fn merge(state: &mut [u8; STATE_LENGTH], state1: &mut [u8; STATE_LENGTH]) {
 
         xor!(state, state1, S);
     }));
+}
+
+#[cfg(feature = "P4")]
+#[inline]
+pub fn with_x4<F>(
+    p0: &mut [u8; STATE_LENGTH],
+    p1: &mut [u8; STATE_LENGTH],
+    p2: &mut [u8; STATE_LENGTH],
+    p3: &mut [u8; STATE_LENGTH],
+    f: F
+)
+    where F: FnOnce(&mut [U; S], &mut [U; S], &mut [U; S], &mut [U; S])
+{
+    with(p0, |p0| {
+        with(p1, |p1| {
+            with(p2, |p2| {
+                with(p3, |p3| {
+                    f(p0, p1, p2, p3);
+                })
+            })
+        })
+    })
 }

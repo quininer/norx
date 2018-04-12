@@ -1,7 +1,7 @@
 // TODO
 
 use subtle::slices_equal;
-use ::common::{ Tag, tags, with, pad, absorb, branch, merge };
+use ::common::{ Tag, tags, with, with_x4, pad, absorb, branch, merge };
 use ::constant::{ U, S, P, STATE_LENGTH, BLOCK_LENGTH, KEY_LENGTH, TAG_LENGTH };
 use ::{ permutation, Norx, Encrypt, Decrypt };
 
@@ -9,6 +9,7 @@ use ::{ permutation, Norx, Encrypt, Decrypt };
 type Lane = [u8; STATE_LENGTH];
 
 pub struct Process<Mode> {
+    state: [u8; STATE_LENGTH],
     lane: (Lane, Lane, Lane, Lane),
     index: u8,
     started: bool,
@@ -28,13 +29,13 @@ impl Norx {
         let Norx(mut state) = self;
         absorb::<tags::Header>(&mut state, aad);
 
-        let lane = (
+        let mut lane = (
             branch!(state, 0), branch!(state, 1),
             branch!(state, 2), branch!(state, 3)
         );
 
         Process {
-            lane,
+            state, lane,
             index: 0, started: false,
             _mode: Encrypt
         }
@@ -50,7 +51,7 @@ impl Norx {
         );
 
         Process {
-            lane,
+            state, lane,
             index: 0, started: false,
             _mode: Decrypt
         }
@@ -79,21 +80,6 @@ impl<T> Process<T> {
     }
 }
 
-#[inline]
-fn with_x4<F>(p0: &mut Lane, p1: &mut Lane, p2: &mut Lane, p3: &mut Lane, f: F)
-    where F: FnOnce(&mut [U; S], &mut [U; S], &mut [U; S], &mut [U; S])
-{
-    with(p0, |p0| {
-        with(p1, |p1| {
-            with(p2, |p2| {
-                with(p3, |p3| {
-                    f(p0, p1, p2, p3);
-                })
-            })
-        })
-    })
-}
-
 impl Process<Encrypt> {
     pub fn process<'a, I>(&mut self, mut bufs: I)
         where I: Iterator<Item = (&'a [u8; BLOCK_LENGTH], &'a mut [u8; BLOCK_LENGTH])>
@@ -106,7 +92,6 @@ impl Process<Encrypt> {
 
             buff[index] = Some(next);
             index += 1;
-            self.index += 1;
 
             if_chain!{
                 if index == 4;
@@ -144,6 +129,7 @@ impl Process<Encrypt> {
         // https://github.com/rust-lang/rust/pull/49000
         for (input, output) in buff.iter_mut()
             .filter_map(|buf| buf.take())
+            .fuse()
         {
             {
                 let (state, ..) = self.current();
@@ -170,6 +156,8 @@ impl Process<Encrypt> {
         let tag = array_mut_ref!(tag, 0, TAG_LENGTH);
 
         if self.started || !input.is_empty() {
+            self.started = true;
+
             let (state, ..) = self.current();
             let input_pad = pad(input);
             with(state, |state| {
@@ -180,15 +168,15 @@ impl Process<Encrypt> {
             output.copy_from_slice(&state[..input.len()]);
         }
 
-        let mut state = [0; STATE_LENGTH];
-        let (mut p0, mut p1, mut p2, mut p3) = self.lane;
+        if self.started {
+            self.state = [0; STATE_LENGTH];
+            merge(&mut self.state, &mut self.lane.0);
+            merge(&mut self.state, &mut self.lane.1);
+            merge(&mut self.state, &mut self.lane.2);
+            merge(&mut self.state, &mut self.lane.3);
+        }
 
-        merge(&mut state, &mut p0);
-        merge(&mut state, &mut p1);
-        merge(&mut state, &mut p2);
-        merge(&mut state, &mut p3);
-
-        Norx(state).finalize(key, aad2, tag);
+        Norx(self.state).finalize(key, aad2, tag);
     }
 }
 
