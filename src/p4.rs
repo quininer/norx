@@ -2,7 +2,7 @@
 
 use subtle::slices_equal;
 use ::common::{ Tag, tags, with, pad, absorb, branch, merge };
-use ::constant::{ U, P, STATE_LENGTH, BLOCK_LENGTH, KEY_LENGTH, TAG_LENGTH };
+use ::constant::{ U, S, P, STATE_LENGTH, BLOCK_LENGTH, KEY_LENGTH, TAG_LENGTH };
 use ::{ permutation, Norx, Encrypt, Decrypt };
 
 
@@ -80,13 +80,87 @@ impl<T> Process<T> {
     }
 }
 
+#[inline]
+fn with_x4<F>(p0: &mut Lane, p1: &mut Lane, p2: &mut Lane, p3: &mut Lane, f: F)
+    where F: FnOnce(&mut [U; S], &mut [U; S], &mut [U; S], &mut [U; S])
+{
+    with(p0, |p0| {
+        with(p1, |p1| {
+            with(p2, |p2| {
+                with(p3, |p3| {
+                    f(p0, p1, p2, p3);
+                })
+            })
+        })
+    })
+}
+
 impl Process<Encrypt> {
-    pub fn process<'a, I>(&mut self, bufs: I)
-        where I:
-            Iterator<Item = (&'a [u8; BLOCK_LENGTH], &'a mut [u8; BLOCK_LENGTH])> +
-            ExactSizeIterator
+    pub fn process<'a, I>(&mut self, mut bufs: I)
+        where I: Iterator<Item = (&'a [u8; BLOCK_LENGTH], &'a mut [u8; BLOCK_LENGTH])>
     {
-        unimplemented!()
+        let mut buff = [None, None, None, None];
+        let mut index = 0;
+
+        for next in bufs {
+            self.started = true;
+
+            buff[index] = Some(next);
+            index += 1;
+            self.index += 1;
+
+            if_chain!{
+                if index == 4;
+                if let Some((input0, output0)) = buff[0].take();
+                if let Some((input1, output1)) = buff[1].take();
+                if let Some((input2, output2)) = buff[2].take();
+                if let Some((input3, output3)) = buff[3].take();
+                then {
+                    index = 0;
+                    let (p0, p1, p2, p3) = self.current();
+
+                    with_x4(p0, p1, p2, p3, |p0, p1, p2, p3| {
+                        p0[15] ^= <tags::Payload as Tag>::TAG;
+                        p1[15] ^= <tags::Payload as Tag>::TAG;
+                        p2[15] ^= <tags::Payload as Tag>::TAG;
+                        p3[15] ^= <tags::Payload as Tag>::TAG;
+
+                        permutation::norx_x4(p0, p1, p2, p3);
+                    });
+
+                    xor!(p0, input0, BLOCK_LENGTH);
+                    xor!(p1, input1, BLOCK_LENGTH);
+                    xor!(p2, input2, BLOCK_LENGTH);
+                    xor!(p3, input3, BLOCK_LENGTH);
+
+                    output0.copy_from_slice(&p0[..BLOCK_LENGTH]);
+                    output1.copy_from_slice(&p1[..BLOCK_LENGTH]);
+                    output2.copy_from_slice(&p2[..BLOCK_LENGTH]);
+                    output3.copy_from_slice(&p3[..BLOCK_LENGTH]);
+                }
+            }
+        }
+
+        // use `into_iter()`
+        // https://github.com/rust-lang/rust/pull/49000
+        for (input, output) in buff.iter_mut()
+            .filter_map(|buf| buf.take())
+        {
+            {
+                let (state, ..) = self.current();
+
+                with(state, |state| {
+                    state[15] ^= <tags::Payload as Tag>::TAG;
+                    permutation::norx(state);
+                });
+
+                xor!(state, input, BLOCK_LENGTH);
+                output.copy_from_slice(&state[..BLOCK_LENGTH]);
+            }
+
+            self.index += 1;
+            self.index %= 4;
+        }
     }
 
     pub fn finalize(mut self, key: &[u8; KEY_LENGTH], aad: &[u8], input: &[u8], output: &mut [u8]) {
@@ -96,9 +170,7 @@ impl Process<Encrypt> {
 
 impl Process<Decrypt> {
     pub fn process<'a, I>(&mut self, bufs: I)
-        where I:
-            Iterator<Item = (&'a [u8; BLOCK_LENGTH], &'a mut [u8; BLOCK_LENGTH])> +
-            ExactSizeIterator
+        where I: Iterator<Item = (&'a [u8; BLOCK_LENGTH], &'a mut [u8; BLOCK_LENGTH])>
     {
         unimplemented!()
     }

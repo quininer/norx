@@ -1,11 +1,14 @@
 #![no_std]
 #![cfg_attr(feature = "cargo-clippy", allow(needless_range_loop))]
 
+#[cfg(feature = "P4")]
+#[macro_use] extern crate if_chain;
 #[macro_use] extern crate arrayref;
 extern crate subtle;
 extern crate byteorder;
 extern crate norx_permutation as permutation;
 
+#[macro_use]
 mod common;
 
 #[cfg(feature = "P1")]

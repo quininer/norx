@@ -4,6 +4,14 @@ use ::constant::{ U, S, STATE_LENGTH, BLOCK_LENGTH };
 use ::permutation;
 
 
+macro_rules! xor {
+    ( $x:expr, $y:expr, $n:expr ) => {
+        for i in 0..$n {
+            $x[i] ^= $y[i];
+        }
+    }
+}
+
 pub trait Tag {
     const TAG: U;
 }
@@ -37,6 +45,7 @@ pub mod tags {
 }
 
 
+#[inline]
 pub fn with<F>(arr: &mut [u8; STATE_LENGTH], f: F)
     where F: FnOnce(&mut [U; S])
 {
