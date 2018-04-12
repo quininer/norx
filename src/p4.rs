@@ -1,4 +1,4 @@
-use subtle::slices_equal;
+use subtle::ConstantTimeEq;
 use ::common::{ Tag, tags, with, with_x4, pad, absorb, branch, merge };
 use ::constant::{ U, STATE_LENGTH, BLOCK_LENGTH, KEY_LENGTH, TAG_LENGTH };
 use ::{ permutation, Norx, Encrypt, Decrypt };
@@ -297,6 +297,6 @@ impl Process<Decrypt> {
         let mut tag2 = [0; TAG_LENGTH];
         Norx(self.state).finalize(key, aad2, &mut tag2);
 
-        slices_equal(tag, &tag2) == 1
+        tag.ct_eq(&tag2).unwrap_u8() == 1
     }
 }
