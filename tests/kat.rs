@@ -19,6 +19,9 @@ const KAT: [u8; 36_736] = include!("kat_config_3261.txt");
 #[cfg(all(feature = "W64", feature = "L4", feature = "P1"))]
 const KAT: [u8; 40_832] = include!("kat_config_6441.txt");
 
+#[cfg(all(feature = "W64", feature = "L4", feature = "P4"))]
+const KAT: [u8; 40_832] = include!("kat_config_6444.txt");
+
 #[cfg(all(feature = "W64", feature = "L6", feature = "P1"))]
 const KAT: [u8; 40_832] = include!("kat_config_6461.txt");
 

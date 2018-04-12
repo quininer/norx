@@ -17,7 +17,7 @@ pub mod tags {
         ( $( $( #[$attr:meta] )* $name:ident => $val:expr ),+ ) => {
             $(
                 $( #[$attr] )*
-                pub struct $name;
+                pub enum $name {}
 
                 impl Tag for $name {
                     const TAG: U = $val;
@@ -37,6 +37,7 @@ pub mod tags {
 }
 
 
+#[inline]
 pub fn with<F>(arr: &mut [u8; STATE_LENGTH], f: F)
     where F: FnOnce(&mut [U; S])
 {
@@ -96,4 +97,54 @@ pub fn absorb<T: Tag>(state: &mut [u8; STATE_LENGTH], aad: &[u8]) {
 
     let chunk = pad(remaining);
     absort_block::<T>(state, &chunk);
+}
+
+#[cfg(feature = "P4")]
+pub fn branch(state: &mut [u8; STATE_LENGTH], lane: U) {
+    use ::constant::{ R, W };
+
+    const CAPACITY: usize = R / W;
+
+    with(state, |state| {
+        state[15] ^= tags::Branch::TAG;
+        permutation::norx(state);
+
+        for i in 0..CAPACITY {
+            state[i] ^= lane;
+        }
+    });
+}
+
+#[cfg(feature = "P4")]
+pub fn merge(state: &mut [u8; STATE_LENGTH], state1: &mut [u8; STATE_LENGTH]) {
+    with(state, |state| with(state1, |state1| {
+        state1[15] ^= tags::Merge::TAG;
+        permutation::norx(state1);
+
+        for i in 0..S {
+            state[i] ^= state1[i];
+        }
+    }));
+}
+
+#[cfg(feature = "P4")]
+#[inline]
+pub fn with_x4<F>(
+    p0: &mut [u8; STATE_LENGTH],
+    p1: &mut [u8; STATE_LENGTH],
+    p2: &mut [u8; STATE_LENGTH],
+    p3: &mut [u8; STATE_LENGTH],
+    f: F
+)
+    where F: FnOnce(&mut [U; S], &mut [U; S], &mut [U; S], &mut [U; S])
+{
+    with(p0, |p0| {
+        with(p1, |p1| {
+            with(p2, |p2| {
+                with(p3, |p3| {
+                    f(p0, p1, p2, p3);
+                })
+            })
+        })
+    })
 }

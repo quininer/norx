@@ -21,7 +21,7 @@ fn bench_norx_encrypt_1024(b: &mut Bencher) {
     let mut c = vec![0; m.len() + TAG_LENGTH];
 
     b.bytes = m.len() as u64;
-    b.iter(|| aead_encrypt(&key, &nonce, &m[..10], &m, &mut c));
+    b.iter(|| aead_encrypt(&key, &nonce, &[], &m, &mut c));
 }
 
 #[bench]
@@ -34,5 +34,5 @@ fn bench_norx_decrypt_1024(b: &mut Bencher) {
     aead_encrypt(&key, &nonce, &m[..10], &m, &mut c);
 
     b.bytes = c.len() as u64;
-    b.iter(|| aead_decrypt(&key, &nonce, &m[..10], &c, &mut p));
+    b.iter(|| aead_decrypt(&key, &nonce, &[], &c, &mut p));
 }
