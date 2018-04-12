@@ -8,18 +8,10 @@ use ::{ permutation, Norx, Encrypt, Decrypt };
 
 type Lane = [u8; STATE_LENGTH];
 
-#[derive(Clone, Copy)]
-enum Index {
-    P0,
-    P1,
-    P2,
-    P3
-}
-
 pub struct Process<Mode> {
     state: [u8; STATE_LENGTH],
     lane: (Lane, Lane, Lane, Lane),
-    index: Index,
+    index: u8,
     started: bool,
     _mode: Mode
 }
@@ -44,7 +36,7 @@ impl Norx {
 
         Process {
             state, lane,
-            index: Index::P0, started: false,
+            index: 0, started: false,
             _mode: Encrypt
         }
     }
@@ -60,7 +52,7 @@ impl Norx {
 
         Process {
             state, lane,
-            index: Index::P0, started: false,
+            index: 0, started: false,
             _mode: Decrypt
         }
     }
@@ -78,11 +70,12 @@ impl<T> Process<T> {
             }
         }
 
-        match self.index {
-            Index::P0 => current!(0, 1, 2, 3),
-            Index::P1 => current!(1, 2, 3, 0),
-            Index::P2 => current!(2, 3, 0, 1),
-            Index::P3 => current!(3, 0, 1, 2)
+        match self.index % 4 {
+            0 => current!(0, 1, 2, 3),
+            1 => current!(1, 2, 3, 0),
+            2 => current!(2, 3, 0, 1),
+            3 => current!(3, 0, 1, 2),
+            _ => unreachable!()
         }
     }
 }
