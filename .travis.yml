@@ -5,6 +5,7 @@ script:
   - cargo test --no-default-features --features "W32 L4 P1"
   - cargo test --no-default-features --features "W32 L6 P1"
   - cargo test --no-default-features --features "W64 L4 P1"
+  - cargo test --no-default-features --features "W64 L4 P4"
   - cargo test --no-default-features --features "W64 L6 P1"
   - cd permutation
   - cargo test --no-default-features --features "W8  L4"

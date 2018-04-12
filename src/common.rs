@@ -1,16 +1,8 @@
 use core::mem;
 use byteorder::{ LittleEndian, ByteOrder };
-use ::constant::{ U, R, W, S, STATE_LENGTH, BLOCK_LENGTH };
+use ::constant::{ U, S, STATE_LENGTH, BLOCK_LENGTH };
 use ::permutation;
 
-
-macro_rules! xor {
-    ( $x:expr, $y:expr, $n:expr ) => {
-        for i in 0..$n {
-            $x[i] ^= $y[i];
-        }
-    }
-}
 
 pub trait Tag {
     const TAG: U;
@@ -109,6 +101,8 @@ pub fn absorb<T: Tag>(state: &mut [u8; STATE_LENGTH], aad: &[u8]) {
 
 #[cfg(feature = "P4")]
 pub fn branch(state: &mut [u8; STATE_LENGTH], lane: U) {
+    use ::constant::{ R, W };
+
     const CAPACITY: usize = R / W;
 
     with(state, |state| {
@@ -127,7 +121,9 @@ pub fn merge(state: &mut [u8; STATE_LENGTH], state1: &mut [u8; STATE_LENGTH]) {
         state1[15] ^= tags::Merge::TAG;
         permutation::norx(state1);
 
-        xor!(state, state1, S);
+        for i in 0..S {
+            state[i] ^= state1[i];
+        }
     }));
 }
 

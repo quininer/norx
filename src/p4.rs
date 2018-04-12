@@ -1,8 +1,6 @@
-// TODO
-
 use subtle::slices_equal;
 use ::common::{ Tag, tags, with, with_x4, pad, absorb, branch, merge };
-use ::constant::{ U, S, P, STATE_LENGTH, BLOCK_LENGTH, KEY_LENGTH, TAG_LENGTH };
+use ::constant::{ U, STATE_LENGTH, BLOCK_LENGTH, KEY_LENGTH, TAG_LENGTH };
 use ::{ permutation, Norx, Encrypt, Decrypt };
 
 
@@ -29,7 +27,7 @@ impl Norx {
         let Norx(mut state) = self;
         absorb::<tags::Header>(&mut state, aad);
 
-        let mut lane = (
+        let lane = (
             branch!(state, 0), branch!(state, 1),
             branch!(state, 2), branch!(state, 3)
         );
@@ -81,7 +79,7 @@ impl<T> Process<T> {
 }
 
 impl Process<Encrypt> {
-    pub fn process<'a, I>(&mut self, mut bufs: I)
+    pub fn process<'a, I>(&mut self, bufs: I)
         where I: Iterator<Item = (&'a [u8; BLOCK_LENGTH], &'a mut [u8; BLOCK_LENGTH])>
     {
         let mut buff = [None, None, None, None];
@@ -112,10 +110,12 @@ impl Process<Encrypt> {
                         permutation::norx_x4(p0, p1, p2, p3);
                     });
 
-                    xor!(p0, input0, BLOCK_LENGTH);
-                    xor!(p1, input1, BLOCK_LENGTH);
-                    xor!(p2, input2, BLOCK_LENGTH);
-                    xor!(p3, input3, BLOCK_LENGTH);
+                    for i in 0..BLOCK_LENGTH {
+                        p0[i] ^= input0[i];
+                        p1[i] ^= input1[i];
+                        p2[i] ^= input2[i];
+                        p3[i] ^= input3[i];
+                    }
 
                     output0.copy_from_slice(&p0[..BLOCK_LENGTH]);
                     output1.copy_from_slice(&p1[..BLOCK_LENGTH]);
@@ -133,13 +133,14 @@ impl Process<Encrypt> {
         {
             {
                 let (state, ..) = self.current();
-
                 with(state, |state| {
                     state[15] ^= <tags::Payload as Tag>::TAG;
                     permutation::norx(state);
                 });
 
-                xor!(state, input, BLOCK_LENGTH);
+                for i in 0..BLOCK_LENGTH {
+                    state[i] ^= input[i];
+                }
                 output.copy_from_slice(&state[..BLOCK_LENGTH]);
             }
 
@@ -164,7 +165,10 @@ impl Process<Encrypt> {
                 state[15] ^= <tags::Payload as Tag>::TAG;
                 permutation::norx(state);
             });
-            xor!(state, input_pad, BLOCK_LENGTH);
+
+            for i in 0..BLOCK_LENGTH {
+                state[i] ^= input_pad[i];
+            }
             output.copy_from_slice(&state[..input.len()]);
         }
 
@@ -174,6 +178,8 @@ impl Process<Encrypt> {
             merge(&mut self.state, &mut self.lane.1);
             merge(&mut self.state, &mut self.lane.2);
             merge(&mut self.state, &mut self.lane.3);
+
+            // TODO zero lane
         }
 
         Norx(self.state).finalize(key, aad2, tag);
@@ -184,10 +190,113 @@ impl Process<Decrypt> {
     pub fn process<'a, I>(&mut self, bufs: I)
         where I: Iterator<Item = (&'a [u8; BLOCK_LENGTH], &'a mut [u8; BLOCK_LENGTH])>
     {
-        unimplemented!()
+        let mut buff = [None, None, None, None];
+        let mut index = 0;
+
+        for next in bufs {
+            self.started = true;
+
+            buff[index] = Some(next);
+            index += 1;
+
+            if_chain!{
+                if index == 4;
+                if let Some((input0, output0)) = buff[0].take();
+                if let Some((input1, output1)) = buff[1].take();
+                if let Some((input2, output2)) = buff[2].take();
+                if let Some((input3, output3)) = buff[3].take();
+                then {
+                    index = 0;
+                    let (p0, p1, p2, p3) = self.current();
+
+                    with_x4(p0, p1, p2, p3, |p0, p1, p2, p3| {
+                        p0[15] ^= <tags::Payload as Tag>::TAG;
+                        p1[15] ^= <tags::Payload as Tag>::TAG;
+                        p2[15] ^= <tags::Payload as Tag>::TAG;
+                        p3[15] ^= <tags::Payload as Tag>::TAG;
+
+                        permutation::norx_x4(p0, p1, p2, p3);
+                    });
+
+                    for i in 0..BLOCK_LENGTH {
+                        output0[i] = p0[i] ^ input0[i];
+                        output1[i] = p1[i] ^ input1[i];
+                        output2[i] = p2[i] ^ input2[i];
+                        output3[i] = p3[i] ^ input3[i];
+                    }
+
+                    p0[..BLOCK_LENGTH].copy_from_slice(input0);
+                    p1[..BLOCK_LENGTH].copy_from_slice(input1);
+                    p2[..BLOCK_LENGTH].copy_from_slice(input2);
+                    p3[..BLOCK_LENGTH].copy_from_slice(input3);
+                }
+            }
+        }
+
+        // use `into_iter()`
+        // https://github.com/rust-lang/rust/pull/49000
+        for (input, output) in buff.iter_mut()
+            .filter_map(|buf| buf.take())
+            .fuse()
+        {
+            {
+                let (state, ..) = self.current();
+                with(state, |state| {
+                    state[15] ^= <tags::Payload as Tag>::TAG;
+                    permutation::norx(state);
+                });
+                for i in 0..BLOCK_LENGTH {
+                    output[i] = state[i] ^ input[i];
+                }
+                state[..BLOCK_LENGTH].copy_from_slice(input);
+            }
+
+            self.index += 1;
+            self.index %= 4;
+        }
     }
 
     pub fn finalize(mut self, key: &[u8; KEY_LENGTH], aad2: &[u8], input: &[u8], output: &mut [u8]) -> bool {
-        unimplemented!()
+        assert!(output.len() < BLOCK_LENGTH);
+        assert_eq!(input.len(), output.len() + TAG_LENGTH);
+
+        let (input, tag) = input.split_at(output.len());
+
+        if self.started || !output.is_empty() {
+            self.started = true;
+
+            let mut lastblock = [0; BLOCK_LENGTH];
+            let (state, ..) = self.current();
+
+            with(state, |state| {
+                state[15] ^= <tags::Payload as Tag>::TAG;
+                permutation::norx(state);
+            });
+
+            lastblock.copy_from_slice(&state[..BLOCK_LENGTH]);
+            lastblock[..input.len()].copy_from_slice(input);
+            lastblock[input.len()] ^= 0x01;
+            lastblock[BLOCK_LENGTH - 1] ^= 0x80;
+
+            for i in 0..input.len() {
+                output[i] = state[i] ^ lastblock[i];
+            }
+            state[..BLOCK_LENGTH].copy_from_slice(&lastblock);
+        }
+
+        if self.started {
+            self.state = [0; STATE_LENGTH];
+            merge(&mut self.state, &mut self.lane.0);
+            merge(&mut self.state, &mut self.lane.1);
+            merge(&mut self.state, &mut self.lane.2);
+            merge(&mut self.state, &mut self.lane.3);
+
+            // TODO zero lane
+        }
+
+        let mut tag2 = [0; TAG_LENGTH];
+        Norx(self.state).finalize(key, aad2, &mut tag2);
+
+        slices_equal(tag, &tag2) == 1
     }
 }
