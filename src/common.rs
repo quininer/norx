@@ -120,13 +120,11 @@ pub fn branch(state: &mut [u8; STATE_LENGTH], lane: U) {
 }
 
 #[cfg(feature = "P4")]
-pub fn merge(state1: &mut [u8; STATE_LENGTH], state2: &mut [u8; STATE_LENGTH]) {
-    with(state1, |state1| with(state2, |state2| {
-        state2[15] ^= tags::Merge::TAG;
-        permutation::norx(state2);
+pub fn merge(state: &mut [u8; STATE_LENGTH], state1: &mut [u8; STATE_LENGTH]) {
+    with(state, |state| with(state1, |state1| {
+        state1[15] ^= tags::Merge::TAG;
+        permutation::norx(state1);
 
-        for i in 0..16 {
-            state2[i] ^= state1[i];
-        }
+        xor!(state, state1, S);
     }));
 }

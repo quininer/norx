@@ -9,7 +9,6 @@ use ::{ permutation, Norx, Encrypt, Decrypt };
 type Lane = [u8; STATE_LENGTH];
 
 pub struct Process<Mode> {
-    state: [u8; STATE_LENGTH],
     lane: (Lane, Lane, Lane, Lane),
     index: u8,
     started: bool,
@@ -35,7 +34,7 @@ impl Norx {
         );
 
         Process {
-            state, lane,
+            lane,
             index: 0, started: false,
             _mode: Encrypt
         }
@@ -51,7 +50,7 @@ impl Norx {
         );
 
         Process {
-            state, lane,
+            lane,
             index: 0, started: false,
             _mode: Decrypt
         }
@@ -163,8 +162,33 @@ impl Process<Encrypt> {
         }
     }
 
-    pub fn finalize(mut self, key: &[u8; KEY_LENGTH], aad: &[u8], input: &[u8], output: &mut [u8]) {
-        unimplemented!()
+    pub fn finalize(mut self, key: &[u8; KEY_LENGTH], aad2: &[u8], input: &[u8], output: &mut [u8]) {
+        assert!(input.len() < BLOCK_LENGTH);
+        assert_eq!(input.len() + TAG_LENGTH, output.len());
+
+        let (output, tag) = output.split_at_mut(input.len());
+        let tag = array_mut_ref!(tag, 0, TAG_LENGTH);
+
+        if self.started || !input.is_empty() {
+            let (state, ..) = self.current();
+            let input_pad = pad(input);
+            with(state, |state| {
+                state[15] ^= <tags::Payload as Tag>::TAG;
+                permutation::norx(state);
+            });
+            xor!(state, input_pad, BLOCK_LENGTH);
+            output.copy_from_slice(&state[..input.len()]);
+        }
+
+        let mut state = [0; STATE_LENGTH];
+        let (mut p0, mut p1, mut p2, mut p3) = self.lane;
+
+        merge(&mut state, &mut p0);
+        merge(&mut state, &mut p1);
+        merge(&mut state, &mut p2);
+        merge(&mut state, &mut p3);
+
+        Norx(state).finalize(key, aad2, tag);
     }
 }
 
@@ -175,7 +199,7 @@ impl Process<Decrypt> {
         unimplemented!()
     }
 
-    pub fn finalize(mut self, key: &[u8; KEY_LENGTH], aad: &[u8], input: &[u8], output: &mut [u8]) -> bool {
+    pub fn finalize(mut self, key: &[u8; KEY_LENGTH], aad2: &[u8], input: &[u8], output: &mut [u8]) -> bool {
         unimplemented!()
     }
 }
