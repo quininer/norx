@@ -59,6 +59,28 @@ pub fn with<F>(arr: &mut [u8; STATE_LENGTH], f: F)
     le_from_slice(arr);
 }
 
+#[cfg(feature = "P4")]
+#[inline]
+pub fn with_x4<F>(
+    p0: &mut [u8; STATE_LENGTH],
+    p1: &mut [u8; STATE_LENGTH],
+    p2: &mut [u8; STATE_LENGTH],
+    p3: &mut [u8; STATE_LENGTH],
+    f: F
+)
+    where F: FnOnce(&mut [U; S], &mut [U; S], &mut [U; S], &mut [U; S])
+{
+    with(p0, |p0| {
+        with(p1, |p1| {
+            with(p2, |p2| {
+                with(p3, |p3| {
+                    f(p0, p1, p2, p3);
+                })
+            })
+        })
+    })
+}
+
 #[inline]
 pub fn pad(input: &[u8]) -> [u8; BLOCK_LENGTH] {
     assert!(input.len() < BLOCK_LENGTH);
@@ -99,10 +121,65 @@ pub fn absorb<T: Tag>(state: &mut [u8; STATE_LENGTH], aad: &[u8]) {
     absort_block::<T>(state, &chunk);
 }
 
+
+#[cfg(feature = "P4")]
+#[cfg_attr(feature = "cargo-clippy", allow(clone_on_copy))]
+pub fn branch_x4(state: &[u8; STATE_LENGTH])
+    -> ([u8; STATE_LENGTH], [u8; STATE_LENGTH], [u8; STATE_LENGTH], [u8; STATE_LENGTH])
+{
+    use ::constant::{ R, W };
+    const CAPACITY: usize = R / W;
+
+    let (mut p0, mut p1, mut p2, mut p3) =
+        (state.clone(), state.clone(), state.clone(), state.clone());
+
+    with_x4(&mut p0, &mut p1, &mut p2, &mut p3, |p0, p1, p2, p3| {
+        p0[15] ^= tags::Branch::TAG;
+        p1[15] ^= tags::Branch::TAG;
+        p2[15] ^= tags::Branch::TAG;
+        p3[15] ^= tags::Branch::TAG;
+
+        permutation::norx_x4(p0, p1, p2, p3);
+
+        for i in 0..CAPACITY {
+            p0[i] ^= 0;
+            p1[i] ^= 1;
+            p2[i] ^= 2;
+            p3[i] ^= 3;
+        }
+    });
+
+    (p0, p1, p2, p3)
+}
+
+#[cfg(feature = "P4")]
+pub fn merge_x4(
+    state: &mut [u8; STATE_LENGTH],
+    p0: &mut [u8; STATE_LENGTH],
+    p1: &mut [u8; STATE_LENGTH],
+    p2: &mut [u8; STATE_LENGTH],
+    p3: &mut [u8; STATE_LENGTH],
+) {
+    *state = [0; STATE_LENGTH];
+
+    with_x4(p0, p1, p2, p3, |p0, p1, p2, p3| {
+        p0[15] ^= tags::Merge::TAG;
+        p1[15] ^= tags::Merge::TAG;
+        p2[15] ^= tags::Merge::TAG;
+        p3[15] ^= tags::Merge::TAG;
+
+        permutation::norx_x4(p0, p1, p2, p3);
+
+        with(state, |state| for i in 0..S {
+            state[i] = p0[i] ^ p1[i] ^ p2[i] ^ p3[i];
+        })
+    })
+}
+
+#[allow(dead_code)]
 #[cfg(feature = "P4")]
 pub fn branch(state: &mut [u8; STATE_LENGTH], lane: U) {
     use ::constant::{ R, W };
-
     const CAPACITY: usize = R / W;
 
     with(state, |state| {
@@ -115,6 +192,7 @@ pub fn branch(state: &mut [u8; STATE_LENGTH], lane: U) {
     });
 }
 
+#[allow(dead_code)]
 #[cfg(feature = "P4")]
 pub fn merge(state: &mut [u8; STATE_LENGTH], state1: &mut [u8; STATE_LENGTH]) {
     with(state, |state| with(state1, |state1| {
@@ -125,26 +203,4 @@ pub fn merge(state: &mut [u8; STATE_LENGTH], state1: &mut [u8; STATE_LENGTH]) {
             state[i] ^= state1[i];
         }
     }));
-}
-
-#[cfg(feature = "P4")]
-#[inline]
-pub fn with_x4<F>(
-    p0: &mut [u8; STATE_LENGTH],
-    p1: &mut [u8; STATE_LENGTH],
-    p2: &mut [u8; STATE_LENGTH],
-    p3: &mut [u8; STATE_LENGTH],
-    f: F
-)
-    where F: FnOnce(&mut [U; S], &mut [U; S], &mut [U; S], &mut [U; S])
-{
-    with(p0, |p0| {
-        with(p1, |p1| {
-            with(p2, |p2| {
-                with(p3, |p3| {
-                    f(p0, p1, p2, p3);
-                })
-            })
-        })
-    })
 }

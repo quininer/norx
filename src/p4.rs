@@ -1,6 +1,6 @@
 use subtle::ConstantTimeEq;
-use ::common::{ Tag, tags, with, with_x4, pad, absorb, branch, merge };
-use ::constant::{ U, STATE_LENGTH, BLOCK_LENGTH, KEY_LENGTH, TAG_LENGTH };
+use ::common::{ Tag, tags, with, with_x4, pad, absorb, branch_x4, merge_x4 };
+use ::constant::{ STATE_LENGTH, BLOCK_LENGTH, KEY_LENGTH, TAG_LENGTH };
 use ::{ permutation, Norx, Encrypt, Decrypt };
 
 
@@ -14,23 +14,12 @@ pub struct Process<Mode> {
     _mode: Mode
 }
 
-macro_rules! branch {
-    ( $state:expr, $i:expr ) => {{
-        let mut lane = $state.clone();
-        branch(&mut lane, $i as U);
-        lane
-    }}
-}
-
 impl Norx {
     pub fn encrypt(self, aad: &[u8]) -> Process<Encrypt> {
         let Norx(mut state) = self;
         absorb::<tags::Header>(&mut state, aad);
 
-        let lane = (
-            branch!(state, 0), branch!(state, 1),
-            branch!(state, 2), branch!(state, 3)
-        );
+        let lane = branch_x4(&state);
 
         Process {
             state, lane,
@@ -43,10 +32,7 @@ impl Norx {
         let Norx(mut state) = self;
         absorb::<tags::Header>(&mut state, aad);
 
-        let lane = (
-            branch!(state, 0), branch!(state, 1),
-            branch!(state, 2), branch!(state, 3)
-        );
+        let lane = branch_x4(&state);
 
         Process {
             state, lane,
@@ -173,11 +159,13 @@ impl Process<Encrypt> {
         }
 
         if self.started {
-            self.state = [0; STATE_LENGTH];
-            merge(&mut self.state, &mut self.lane.0);
-            merge(&mut self.state, &mut self.lane.1);
-            merge(&mut self.state, &mut self.lane.2);
-            merge(&mut self.state, &mut self.lane.3);
+            merge_x4(
+                &mut self.state,
+                &mut self.lane.0,
+                &mut self.lane.1,
+                &mut self.lane.2,
+                &mut self.lane.3
+            );
 
             // TODO zero lane
         }
@@ -285,11 +273,13 @@ impl Process<Decrypt> {
         }
 
         if self.started {
-            self.state = [0; STATE_LENGTH];
-            merge(&mut self.state, &mut self.lane.0);
-            merge(&mut self.state, &mut self.lane.1);
-            merge(&mut self.state, &mut self.lane.2);
-            merge(&mut self.state, &mut self.lane.3);
+            merge_x4(
+                &mut self.state,
+                &mut self.lane.0,
+                &mut self.lane.1,
+                &mut self.lane.2,
+                &mut self.lane.3
+            );
 
             // TODO zero lane
         }
