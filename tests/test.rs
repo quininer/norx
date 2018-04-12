@@ -11,11 +11,11 @@ use norx::constant::{ KEY_LENGTH, NONCE_LENGTH, TAG_LENGTH };
 
 #[test]
 fn test_aead() {
-    for _ in 0..100 {
+    for i in 0..1025 {
         let mut key = [0; KEY_LENGTH];
         let mut nonce = [0; NONCE_LENGTH];
         let mut aad = vec![0; (random::<usize>() % 128) + 1];
-        let mut m = vec![0; (random::<usize>() % 1024) + 1];
+        let mut m = vec![0; i];
         let mut c = vec![0; m.len() + TAG_LENGTH];
         let mut p = vec![0; m.len()];
 
@@ -26,8 +26,8 @@ fn test_aead() {
 
         aead_encrypt(&key, &nonce, &aad, &m, &mut c);
         let r = aead_decrypt(&key, &nonce, &aad, &c, &mut p);
-        assert!(r);
+        assert!(r, "{} times", i);
 
-        assert_eq!(p, m);
+        assert_eq!(p, m, "{} times", i);
     }
 }

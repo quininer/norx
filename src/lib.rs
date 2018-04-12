@@ -1,7 +1,5 @@
-// #![no_std]
+#![no_std]
 #![cfg_attr(feature = "cargo-clippy", allow(needless_range_loop))]
-
-extern crate core;
 
 #[cfg(feature = "P4")]
 #[macro_use] extern crate if_chain;
