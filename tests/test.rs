@@ -14,7 +14,7 @@ fn test_aead() {
     for i in 0..1025 {
         let mut key = [0; KEY_LENGTH];
         let mut nonce = [0; NONCE_LENGTH];
-        let mut aad = vec![0; (random::<usize>() % 128) + 1];
+        let mut aad = vec![0; random::<usize>() % 128];
         let mut m = vec![0; i];
         let mut c = vec![0; m.len() + TAG_LENGTH];
         let mut p = vec![0; m.len()];

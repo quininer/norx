@@ -41,12 +41,11 @@ impl Process<Encrypt> {
             for i in 0..BLOCK_LENGTH {
                 self.state[i] ^= input[i];
             }
-
             output.copy_from_slice(&self.state[..BLOCK_LENGTH]);
         }
     }
 
-    pub fn finalize(mut self, key: &[u8; KEY_LENGTH], aad: &[u8], input: &[u8], output: &mut [u8]) {
+    pub fn finalize(mut self, key: &[u8; KEY_LENGTH], aad2: &[u8], input: &[u8], output: &mut [u8]) {
         assert!(input.len() < BLOCK_LENGTH);
         assert_eq!(input.len() + TAG_LENGTH, output.len());
 
@@ -65,7 +64,7 @@ impl Process<Encrypt> {
             output.copy_from_slice(&self.state[..input.len()]);
         }
 
-        Norx(self.state).finalize(key, aad, tag);
+        Norx(self.state).finalize(key, aad2, tag);
     }
 }
 
@@ -88,7 +87,7 @@ impl Process<Decrypt> {
         }
     }
 
-    pub fn finalize(mut self, key: &[u8; KEY_LENGTH], aad: &[u8], input: &[u8], output: &mut [u8]) -> bool {
+    pub fn finalize(mut self, key: &[u8; KEY_LENGTH], aad2: &[u8], input: &[u8], output: &mut [u8]) -> bool {
         assert!(output.len() < BLOCK_LENGTH);
         assert_eq!(input.len(), output.len() + TAG_LENGTH);
 
@@ -114,7 +113,7 @@ impl Process<Decrypt> {
         }
 
         let mut tag2 = [0; TAG_LENGTH];
-        Norx(self.state).finalize(key, aad, &mut tag2);
+        Norx(self.state).finalize(key, aad2, &mut tag2);
 
         tag.ct_eq(&tag2).unwrap_u8() == 1
     }

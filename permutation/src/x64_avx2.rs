@@ -72,7 +72,6 @@ macro_rules! EX {
 }
 
 
-#[target_feature(enable = "avx2")]
 pub unsafe fn norx(state: &mut [U; S]) {
     unsafe fn f(state: &mut [u64x4; 4]) {
         EX!{
@@ -100,7 +99,6 @@ pub unsafe fn norx(state: &mut [U; S]) {
     s[3].store_unaligned(&mut state[12..]);
 }
 
-#[target_feature(enable = "avx2")]
 pub unsafe fn norx_x4(state1: &mut [U; S], state2: &mut [U; S], state3: &mut [U; S], state4: &mut [U; S]) {
     unsafe fn f_x4(state: &mut [u64x4; 16]) {
         EX!{
