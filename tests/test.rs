@@ -4,7 +4,7 @@ extern crate norx;
 
 mod aead;
 
-use rand::{ Rng, thread_rng, random };
+use rand::{ RngCore, thread_rng, random };
 use aead::{ aead_encrypt, aead_decrypt };
 use norx::constant::{ KEY_LENGTH, NONCE_LENGTH, TAG_LENGTH };
 

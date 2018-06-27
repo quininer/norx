@@ -42,8 +42,9 @@ pub fn with<F>(arr: &mut [u8; STATE_LENGTH], f: F)
     where F: FnOnce(&mut [U; S])
 {
     #[inline]
-    fn array_as_block(arr: &mut [u8; STATE_LENGTH]) -> &mut [U; S] {
+    fn transmute(arr: &mut [u8; STATE_LENGTH]) -> &mut [U; S] {
         unsafe { mem::transmute(arr) }
+//        unsafe { &mut *(arr as *mut [u8; STATE_LENGTH] as *mut [U; S]) }
     }
 
     #[inline]
@@ -53,7 +54,7 @@ pub fn with<F>(arr: &mut [u8; STATE_LENGTH], f: F)
         #[cfg(feature = "W64")] LittleEndian::from_slice_u64(arr);
     }
 
-    let arr = array_as_block(arr);
+    let arr = transmute(arr);
     le_from_slice(arr);
     f(arr);
     le_from_slice(arr);
@@ -97,7 +98,7 @@ pub fn pad(input: &[u8]) -> [u8; BLOCK_LENGTH] {
 
 pub fn absorb<T: Tag>(state: &mut [u8; STATE_LENGTH], aad: &[u8]) {
     #[inline]
-    fn absort_block<T: Tag>(state: &mut [u8; STATE_LENGTH], chunk: &[u8; BLOCK_LENGTH]) {
+    fn absorb_block<T: Tag>(state: &mut [u8; STATE_LENGTH], chunk: &[u8; BLOCK_LENGTH]) {
         with(state, |state| {
             state[15] ^= T::TAG;
             permutation::norx(state);
@@ -114,11 +115,11 @@ pub fn absorb<T: Tag>(state: &mut [u8; STATE_LENGTH], aad: &[u8]) {
 
     for chunk in aad.chunks(BLOCK_LENGTH) {
         let chunk = array_ref!(chunk, 0, BLOCK_LENGTH);
-        absort_block::<T>(state, chunk);
+        absorb_block::<T>(state, chunk);
     }
 
     let chunk = pad(remaining);
-    absort_block::<T>(state, &chunk);
+    absorb_block::<T>(state, &chunk);
 }
 
 
@@ -174,33 +175,4 @@ pub fn merge_x4(
             state[i] = p0[i] ^ p1[i] ^ p2[i] ^ p3[i];
         })
     })
-}
-
-#[allow(dead_code)]
-#[cfg(feature = "P4")]
-pub fn branch(state: &mut [u8; STATE_LENGTH], lane: U) {
-    use ::constant::{ R, W };
-    const CAPACITY: usize = R / W;
-
-    with(state, |state| {
-        state[15] ^= tags::Branch::TAG;
-        permutation::norx(state);
-
-        for i in 0..CAPACITY {
-            state[i] ^= lane;
-        }
-    });
-}
-
-#[allow(dead_code)]
-#[cfg(feature = "P4")]
-pub fn merge(state: &mut [u8; STATE_LENGTH], state1: &mut [u8; STATE_LENGTH]) {
-    with(state, |state| with(state1, |state1| {
-        state1[15] ^= tags::Merge::TAG;
-        permutation::norx(state1);
-
-        for i in 0..S {
-            state[i] ^= state1[i];
-        }
-    }));
 }
