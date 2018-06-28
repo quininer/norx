@@ -22,28 +22,33 @@ mod imp;
 pub mod constant;
 
 use common::{ Tag, tags, with, absorb };
-use constant::{ W, STATE_LENGTH, KEY_LENGTH, NONCE_LENGTH, TAG_LENGTH };
+use constant::{ W, U, S, KEY_LENGTH, NONCE_LENGTH, TAG_LENGTH };
 pub use imp::Process;
 
 
 #[derive(Clone)]
-pub struct Norx([u8; STATE_LENGTH]);
+pub struct Norx([U; S]);
 pub struct Encrypt;
 pub struct Decrypt;
 
 impl Norx {
     pub fn new(key: &[u8; KEY_LENGTH], nonce: &[u8; NONCE_LENGTH]) -> Norx {
         // TODO use CTFE https://github.com/rust-lang/rust/issues/24111
+        #![cfg_attr(feature = "cargo-clippy", allow(unreadable_literal))]
         let mut state = include!(concat!(env!("OUT_DIR"), "/", "init_state.rs"));
 
-        state[..NONCE_LENGTH].copy_from_slice(nonce);
-        state[NONCE_LENGTH..][..KEY_LENGTH].copy_from_slice(key);
+        with(&mut state, |state| {
+            state[..NONCE_LENGTH].copy_from_slice(nonce);
+            state[NONCE_LENGTH..][..KEY_LENGTH].copy_from_slice(key);
+        });
 
-        with(&mut state, permutation::norx);
+        permutation::norx(&mut state);
 
-        for i in 0..KEY_LENGTH {
-            state[(12 * W / 8)..][i] ^= key[i];
-        }
+        with(&mut state, |state| {
+            for i in 0..KEY_LENGTH {
+                state[(12 * W / 8)..][i] ^= key[i];
+            }
+        });
 
         Norx(state)
     }
@@ -53,20 +58,22 @@ impl Norx {
 
         absorb::<tags::Trailer>(state, aad);
 
+        state[15] ^= <tags::Final as Tag>::TAG;
+        permutation::norx(state);
+
         with(state, |state| {
-            state[15] ^= <tags::Final as Tag>::TAG;
-            permutation::norx(state);
+            for i in 0..KEY_LENGTH {
+                state[(12 * W / 8)..][i] ^= key[i];
+            }
         });
 
-        for i in 0..KEY_LENGTH {
-            state[(12 * W / 8)..][i] ^= key[i];
-        }
+        permutation::norx(state);
 
-        with(state, permutation::norx);
-
-        for i in 0..KEY_LENGTH {
-            tag[i] = state[(12 * W / 8)..][i] ^ key[i];
-        }
+        with(state, |state| {
+            for i in 0..KEY_LENGTH {
+                tag[i] = state[(12 * W / 8)..][i] ^ key[i];
+            }
+        });
 
         // TODO zero state
     }

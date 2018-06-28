@@ -1,11 +1,9 @@
 extern crate core;
-extern crate byteorder;
 extern crate norx_permutation as permutation;
 
 use std::{ fs, env };
 use std::io::Write;
 use std::path::PathBuf;
-use byteorder::{ LittleEndian, ByteOrder };
 use permutation::{ U, S, L };
 
 #[allow(dead_code)]
@@ -14,8 +12,7 @@ mod constant;
 
 use constant::*;
 
-fn init() -> [u8; STATE_LENGTH] {
-    let mut state_bytes = [0; STATE_LENGTH];
+fn init() -> [U; S] {
     let mut state = [0; S];
 
     for i in 0..S {
@@ -30,10 +27,7 @@ fn init() -> [u8; STATE_LENGTH] {
     state[14] ^= P as U;
     state[15] ^= T as U;
 
-    #[cfg(feature = "W32")] LittleEndian::write_u32_into(&state, &mut state_bytes);
-    #[cfg(feature = "W64")] LittleEndian::write_u64_into(&state, &mut state_bytes);
-
-    state_bytes
+    state
 }
 
 fn main() {

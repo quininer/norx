@@ -1,11 +1,11 @@
 use subtle::ConstantTimeEq;
 use ::common::{ Tag, tags, with, pad, absorb };
-use ::constant::{ STATE_LENGTH, BLOCK_LENGTH, KEY_LENGTH, TAG_LENGTH };
+use ::constant::{ U, S, BLOCK_LENGTH, KEY_LENGTH, TAG_LENGTH };
 use ::{ permutation, Norx, Encrypt, Decrypt };
 
 
 pub struct Process<Mode> {
-    state: [u8; STATE_LENGTH],
+    state: [U; S],
     started: bool,
     _mode: Mode
 }
@@ -33,15 +33,15 @@ impl Process<Encrypt> {
         for (input, output) in bufs {
             self.started = true;
 
-            with(&mut self.state, |state| {
-                state[15] ^= <tags::Payload as Tag>::TAG;
-                permutation::norx(state);
-            });
+            self.state[15] ^= <tags::Payload as Tag>::TAG;
+            permutation::norx(&mut self.state);
 
-            for i in 0..BLOCK_LENGTH {
-                self.state[i] ^= input[i];
-            }
-            output.copy_from_slice(&self.state[..BLOCK_LENGTH]);
+            with(&mut self.state, |state| {
+                for i in 0..BLOCK_LENGTH {
+                    state[i] ^= input[i];
+                }
+                output.copy_from_slice(&state[..BLOCK_LENGTH]);
+            });
         }
     }
 
@@ -54,14 +54,16 @@ impl Process<Encrypt> {
 
         if self.started || !input.is_empty() {
             let input_pad = pad(input);
+
+            self.state[15] ^= <tags::Payload as Tag>::TAG;
+            permutation::norx(&mut self.state);
+
             with(&mut self.state, |state| {
-                state[15] ^= <tags::Payload as Tag>::TAG;
-                permutation::norx(state);
+                for i in 0..BLOCK_LENGTH {
+                    state[i] ^= input_pad[i];
+                }
+                output.copy_from_slice(&state[..input.len()]);
             });
-            for i in 0..BLOCK_LENGTH {
-                self.state[i] ^= input_pad[i];
-            }
-            output.copy_from_slice(&self.state[..input.len()]);
         }
 
         Norx(self.state).finalize(key, aad2, tag);
@@ -75,15 +77,15 @@ impl Process<Decrypt> {
         for (input, output) in bufs {
             self.started = true;
 
-            with(&mut self.state, |state| {
-                state[15] ^= <tags::Payload as Tag>::TAG;
-                permutation::norx(state);
-            });
+            self.state[15] ^= <tags::Payload as Tag>::TAG;
+            permutation::norx(&mut self.state);
 
-            for i in 0..BLOCK_LENGTH {
-                output[i] = self.state[i] ^ input[i];
-                self.state[i] = input[i];
-            }
+            with(&mut self.state, |state| {
+                for i in 0..BLOCK_LENGTH {
+                    output[i] = state[i] ^ input[i];
+                    state[i] = input[i];
+                }
+            });
         }
     }
 
@@ -96,20 +98,20 @@ impl Process<Decrypt> {
         if self.started || !output.is_empty() {
             let mut lastblock = [0; BLOCK_LENGTH];
 
+            self.state[15] ^= <tags::Payload as Tag>::TAG;
+            permutation::norx(&mut self.state);
+
             with(&mut self.state, |state| {
-                state[15] ^= <tags::Payload as Tag>::TAG;
-                permutation::norx(state);
+                lastblock.copy_from_slice(&state[..BLOCK_LENGTH]);
+                lastblock[..input.len()].copy_from_slice(input);
+                lastblock[input.len()] ^= 0x01;
+                lastblock[BLOCK_LENGTH - 1] ^= 0x80;
+
+                for i in 0..input.len() {
+                    output[i] = state[i] ^ lastblock[i];
+                }
+                state[..BLOCK_LENGTH].copy_from_slice(&lastblock);
             });
-
-            lastblock.copy_from_slice(&self.state[..BLOCK_LENGTH]);
-            lastblock[..input.len()].copy_from_slice(input);
-            lastblock[input.len()] ^= 0x01;
-            lastblock[BLOCK_LENGTH - 1] ^= 0x80;
-
-            for i in 0..input.len() {
-                output[i] = self.state[i] ^ lastblock[i];
-            }
-            self.state[..BLOCK_LENGTH].copy_from_slice(&lastblock);
         }
 
         let mut tag2 = [0; TAG_LENGTH];

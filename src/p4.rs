@@ -1,13 +1,13 @@
 use subtle::ConstantTimeEq;
 use ::common::{ Tag, tags, with, with_x4, pad, absorb, branch_x4, merge_x4 };
-use ::constant::{ STATE_LENGTH, BLOCK_LENGTH, KEY_LENGTH, TAG_LENGTH };
+use ::constant::{ U, S, BLOCK_LENGTH, KEY_LENGTH, TAG_LENGTH };
 use ::{ permutation, Norx, Encrypt, Decrypt };
 
 
-type Lane = [u8; STATE_LENGTH];
+type Lane = [U; S];
 
 pub struct Process<Mode> {
-    state: [u8; STATE_LENGTH],
+    state: [U; S],
     lane: (Lane, Lane, Lane, Lane),
     index: u8,
     started: bool,
@@ -87,26 +87,26 @@ impl Process<Encrypt> {
                     index = 0;
                     let (p0, p1, p2, p3) = self.current();
 
+                    p0[15] ^= <tags::Payload as Tag>::TAG;
+                    p1[15] ^= <tags::Payload as Tag>::TAG;
+                    p2[15] ^= <tags::Payload as Tag>::TAG;
+                    p3[15] ^= <tags::Payload as Tag>::TAG;
+
+                    permutation::norx_x4(p0, p1, p2, p3);
+
                     with_x4(p0, p1, p2, p3, |p0, p1, p2, p3| {
-                        p0[15] ^= <tags::Payload as Tag>::TAG;
-                        p1[15] ^= <tags::Payload as Tag>::TAG;
-                        p2[15] ^= <tags::Payload as Tag>::TAG;
-                        p3[15] ^= <tags::Payload as Tag>::TAG;
+                        for i in 0..BLOCK_LENGTH {
+                            p0[i] ^= input0[i];
+                            p1[i] ^= input1[i];
+                            p2[i] ^= input2[i];
+                            p3[i] ^= input3[i];
+                        }
 
-                        permutation::norx_x4(p0, p1, p2, p3);
+                        output0.copy_from_slice(&p0[..BLOCK_LENGTH]);
+                        output1.copy_from_slice(&p1[..BLOCK_LENGTH]);
+                        output2.copy_from_slice(&p2[..BLOCK_LENGTH]);
+                        output3.copy_from_slice(&p3[..BLOCK_LENGTH]);
                     });
-
-                    for i in 0..BLOCK_LENGTH {
-                        p0[i] ^= input0[i];
-                        p1[i] ^= input1[i];
-                        p2[i] ^= input2[i];
-                        p3[i] ^= input3[i];
-                    }
-
-                    output0.copy_from_slice(&p0[..BLOCK_LENGTH]);
-                    output1.copy_from_slice(&p1[..BLOCK_LENGTH]);
-                    output2.copy_from_slice(&p2[..BLOCK_LENGTH]);
-                    output3.copy_from_slice(&p3[..BLOCK_LENGTH]);
                 }
             }
         }
@@ -119,15 +119,14 @@ impl Process<Encrypt> {
         {
             {
                 let (state, ..) = self.current();
+                state[15] ^= <tags::Payload as Tag>::TAG;
+                permutation::norx(state);
                 with(state, |state| {
-                    state[15] ^= <tags::Payload as Tag>::TAG;
-                    permutation::norx(state);
+                    for i in 0..BLOCK_LENGTH {
+                        state[i] ^= input[i];
+                    }
+                    output.copy_from_slice(&state[..BLOCK_LENGTH]);
                 });
-
-                for i in 0..BLOCK_LENGTH {
-                    state[i] ^= input[i];
-                }
-                output.copy_from_slice(&state[..BLOCK_LENGTH]);
             }
 
             self.index += 1;
@@ -147,15 +146,16 @@ impl Process<Encrypt> {
 
             let (state, ..) = self.current();
             let input_pad = pad(input);
-            with(state, |state| {
-                state[15] ^= <tags::Payload as Tag>::TAG;
-                permutation::norx(state);
-            });
 
-            for i in 0..BLOCK_LENGTH {
-                state[i] ^= input_pad[i];
-            }
-            output.copy_from_slice(&state[..input.len()]);
+            state[15] ^= <tags::Payload as Tag>::TAG;
+            permutation::norx(state);
+
+            with(state, |state| {
+                for i in 0..BLOCK_LENGTH {
+                    state[i] ^= input_pad[i];
+                }
+                output.copy_from_slice(&state[..input.len()]);
+            });
         }
 
         if self.started {
@@ -197,26 +197,26 @@ impl Process<Decrypt> {
                     index = 0;
                     let (p0, p1, p2, p3) = self.current();
 
+                    p0[15] ^= <tags::Payload as Tag>::TAG;
+                    p1[15] ^= <tags::Payload as Tag>::TAG;
+                    p2[15] ^= <tags::Payload as Tag>::TAG;
+                    p3[15] ^= <tags::Payload as Tag>::TAG;
+
+                    permutation::norx_x4(p0, p1, p2, p3);
+
                     with_x4(p0, p1, p2, p3, |p0, p1, p2, p3| {
-                        p0[15] ^= <tags::Payload as Tag>::TAG;
-                        p1[15] ^= <tags::Payload as Tag>::TAG;
-                        p2[15] ^= <tags::Payload as Tag>::TAG;
-                        p3[15] ^= <tags::Payload as Tag>::TAG;
+                        for i in 0..BLOCK_LENGTH {
+                            output0[i] = p0[i] ^ input0[i];
+                            output1[i] = p1[i] ^ input1[i];
+                            output2[i] = p2[i] ^ input2[i];
+                            output3[i] = p3[i] ^ input3[i];
+                        }
 
-                        permutation::norx_x4(p0, p1, p2, p3);
+                        p0[..BLOCK_LENGTH].copy_from_slice(input0);
+                        p1[..BLOCK_LENGTH].copy_from_slice(input1);
+                        p2[..BLOCK_LENGTH].copy_from_slice(input2);
+                        p3[..BLOCK_LENGTH].copy_from_slice(input3);
                     });
-
-                    for i in 0..BLOCK_LENGTH {
-                        output0[i] = p0[i] ^ input0[i];
-                        output1[i] = p1[i] ^ input1[i];
-                        output2[i] = p2[i] ^ input2[i];
-                        output3[i] = p3[i] ^ input3[i];
-                    }
-
-                    p0[..BLOCK_LENGTH].copy_from_slice(input0);
-                    p1[..BLOCK_LENGTH].copy_from_slice(input1);
-                    p2[..BLOCK_LENGTH].copy_from_slice(input2);
-                    p3[..BLOCK_LENGTH].copy_from_slice(input3);
                 }
             }
         }
@@ -229,14 +229,14 @@ impl Process<Decrypt> {
         {
             {
                 let (state, ..) = self.current();
+                state[15] ^= <tags::Payload as Tag>::TAG;
+                permutation::norx(state);
                 with(state, |state| {
-                    state[15] ^= <tags::Payload as Tag>::TAG;
-                    permutation::norx(state);
+                    for i in 0..BLOCK_LENGTH {
+                        output[i] = state[i] ^ input[i];
+                    }
+                    state[..BLOCK_LENGTH].copy_from_slice(input);
                 });
-                for i in 0..BLOCK_LENGTH {
-                    output[i] = state[i] ^ input[i];
-                }
-                state[..BLOCK_LENGTH].copy_from_slice(input);
             }
 
             self.index += 1;
@@ -256,20 +256,20 @@ impl Process<Decrypt> {
             let mut lastblock = [0; BLOCK_LENGTH];
             let (state, ..) = self.current();
 
+            state[15] ^= <tags::Payload as Tag>::TAG;
+            permutation::norx(state);
+
             with(state, |state| {
-                state[15] ^= <tags::Payload as Tag>::TAG;
-                permutation::norx(state);
+                lastblock.copy_from_slice(&state[..BLOCK_LENGTH]);
+                lastblock[..input.len()].copy_from_slice(input);
+                lastblock[input.len()] ^= 0x01;
+                lastblock[BLOCK_LENGTH - 1] ^= 0x80;
+
+                for i in 0..input.len() {
+                    output[i] = state[i] ^ lastblock[i];
+                }
+                state[..BLOCK_LENGTH].copy_from_slice(&lastblock);
             });
-
-            lastblock.copy_from_slice(&state[..BLOCK_LENGTH]);
-            lastblock[..input.len()].copy_from_slice(input);
-            lastblock[input.len()] ^= 0x01;
-            lastblock[BLOCK_LENGTH - 1] ^= 0x80;
-
-            for i in 0..input.len() {
-                output[i] = state[i] ^ lastblock[i];
-            }
-            state[..BLOCK_LENGTH].copy_from_slice(&lastblock);
         }
 
         if self.started {

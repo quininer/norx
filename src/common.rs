@@ -1,4 +1,3 @@
-use core::mem;
 use byteorder::{ LittleEndian, ByteOrder };
 use ::constant::{ U, S, STATE_LENGTH, BLOCK_LENGTH };
 use ::permutation;
@@ -38,13 +37,13 @@ pub mod tags {
 
 
 #[inline]
-pub fn with<F>(arr: &mut [u8; STATE_LENGTH], f: F)
-    where F: FnOnce(&mut [U; S])
+pub fn with<F>(arr: &mut [U; S], f: F)
+    where F: FnOnce(&mut [u8; STATE_LENGTH])
 {
     #[inline]
-    fn transmute(arr: &mut [u8; STATE_LENGTH]) -> &mut [U; S] {
-        unsafe { mem::transmute(arr) }
-//        unsafe { &mut *(arr as *mut [u8; STATE_LENGTH] as *mut [U; S]) }
+    fn transmute(arr: &mut [U; S]) -> &mut [u8; STATE_LENGTH] {
+//        unsafe { mem::transmute(arr) }
+        unsafe { &mut *(arr as *mut [U; S] as *mut [u8; STATE_LENGTH]) }
     }
 
     #[inline]
@@ -54,22 +53,20 @@ pub fn with<F>(arr: &mut [u8; STATE_LENGTH], f: F)
         #[cfg(feature = "W64")] LittleEndian::from_slice_u64(arr);
     }
 
-    let arr = transmute(arr);
     le_from_slice(arr);
-    f(arr);
+    f(transmute(arr));
     le_from_slice(arr);
 }
 
 #[cfg(feature = "P4")]
 #[inline]
-pub fn with_x4<F>(
-    p0: &mut [u8; STATE_LENGTH],
-    p1: &mut [u8; STATE_LENGTH],
-    p2: &mut [u8; STATE_LENGTH],
-    p3: &mut [u8; STATE_LENGTH],
-    f: F
-)
-    where F: FnOnce(&mut [U; S], &mut [U; S], &mut [U; S], &mut [U; S])
+pub fn with_x4<F>(p0: &mut [U; S], p1: &mut [U; S], p2: &mut [U; S], p3: &mut [U; S], f: F)
+    where F: FnOnce(
+        &mut [u8; STATE_LENGTH],
+        &mut [u8; STATE_LENGTH],
+        &mut [u8; STATE_LENGTH],
+        &mut [u8; STATE_LENGTH]
+    )
 {
     with(p0, |p0| {
         with(p1, |p1| {
@@ -96,17 +93,17 @@ pub fn pad(input: &[u8]) -> [u8; BLOCK_LENGTH] {
 }
 
 
-pub fn absorb<T: Tag>(state: &mut [u8; STATE_LENGTH], aad: &[u8]) {
+pub fn absorb<T: Tag>(state: &mut [U; S], aad: &[u8]) {
     #[inline]
-    fn absorb_block<T: Tag>(state: &mut [u8; STATE_LENGTH], chunk: &[u8; BLOCK_LENGTH]) {
-        with(state, |state| {
-            state[15] ^= T::TAG;
-            permutation::norx(state);
-        });
+    fn absorb_block<T: Tag>(state: &mut [U; S], chunk: &[u8; BLOCK_LENGTH]) {
+        state[15] ^= T::TAG;
+        permutation::norx(state);
 
-        for i in 0..BLOCK_LENGTH {
-            state[i] ^= chunk[i];
-        }
+        with(state, |state| {
+            for i in 0..BLOCK_LENGTH {
+                state[i] ^= chunk[i];
+            }
+        });
     }
 
     if aad.is_empty() { return () };
@@ -125,8 +122,8 @@ pub fn absorb<T: Tag>(state: &mut [u8; STATE_LENGTH], aad: &[u8]) {
 
 #[cfg(feature = "P4")]
 #[cfg_attr(feature = "cargo-clippy", allow(clone_on_copy))]
-pub fn branch_x4(state: &[u8; STATE_LENGTH])
-    -> ([u8; STATE_LENGTH], [u8; STATE_LENGTH], [u8; STATE_LENGTH], [u8; STATE_LENGTH])
+pub fn branch_x4(state: &[U; S])
+    -> ([U; S], [U; S], [U; S], [U; S])
 {
     use ::constant::{ R, W };
     const CAPACITY: usize = R / W;
@@ -134,45 +131,41 @@ pub fn branch_x4(state: &[u8; STATE_LENGTH])
     let (mut p0, mut p1, mut p2, mut p3) =
         (state.clone(), state.clone(), state.clone(), state.clone());
 
-    with_x4(&mut p0, &mut p1, &mut p2, &mut p3, |p0, p1, p2, p3| {
-        p0[15] ^= tags::Branch::TAG;
-        p1[15] ^= tags::Branch::TAG;
-        p2[15] ^= tags::Branch::TAG;
-        p3[15] ^= tags::Branch::TAG;
+    p0[15] ^= tags::Branch::TAG;
+    p1[15] ^= tags::Branch::TAG;
+    p2[15] ^= tags::Branch::TAG;
+    p3[15] ^= tags::Branch::TAG;
 
-        permutation::norx_x4(p0, p1, p2, p3);
+    permutation::norx_x4(&mut p0, &mut p1, &mut p2, &mut p3);
 
-        for i in 0..CAPACITY {
-            p0[i] ^= 0;
-            p1[i] ^= 1;
-            p2[i] ^= 2;
-            p3[i] ^= 3;
-        }
-    });
+    for i in 0..CAPACITY {
+        p0[i] ^= 0;
+        p1[i] ^= 1;
+        p2[i] ^= 2;
+        p3[i] ^= 3;
+    }
 
     (p0, p1, p2, p3)
 }
 
 #[cfg(feature = "P4")]
 pub fn merge_x4(
-    state: &mut [u8; STATE_LENGTH],
-    p0: &mut [u8; STATE_LENGTH],
-    p1: &mut [u8; STATE_LENGTH],
-    p2: &mut [u8; STATE_LENGTH],
-    p3: &mut [u8; STATE_LENGTH],
+    state: &mut [U; S],
+    p0: &mut [U; S],
+    p1: &mut [U; S],
+    p2: &mut [U; S],
+    p3: &mut [U; S],
 ) {
-    *state = [0; STATE_LENGTH];
+    *state = [0; S];
 
-    with_x4(p0, p1, p2, p3, |p0, p1, p2, p3| {
-        p0[15] ^= tags::Merge::TAG;
-        p1[15] ^= tags::Merge::TAG;
-        p2[15] ^= tags::Merge::TAG;
-        p3[15] ^= tags::Merge::TAG;
+    p0[15] ^= tags::Merge::TAG;
+    p1[15] ^= tags::Merge::TAG;
+    p2[15] ^= tags::Merge::TAG;
+    p3[15] ^= tags::Merge::TAG;
 
-        permutation::norx_x4(p0, p1, p2, p3);
+    permutation::norx_x4(p0, p1, p2, p3);
 
-        with(state, |state| for i in 0..S {
-            state[i] = p0[i] ^ p1[i] ^ p2[i] ^ p3[i];
-        })
-    })
+    for i in 0..S {
+        state[i] = p0[i] ^ p1[i] ^ p2[i] ^ p3[i];
+    }
 }
