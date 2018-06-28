@@ -83,8 +83,8 @@ impl Process<Decrypt> {
             with(&mut self.state, |state| {
                 for i in 0..BLOCK_LENGTH {
                     output[i] = state[i] ^ input[i];
-                    state[i] = input[i];
                 }
+                state[..BLOCK_LENGTH].copy_from_slice(input);
             });
         }
     }
@@ -102,8 +102,8 @@ impl Process<Decrypt> {
             permutation::norx(&mut self.state);
 
             with(&mut self.state, |state| {
-                lastblock.copy_from_slice(&state[..BLOCK_LENGTH]);
                 lastblock[..input.len()].copy_from_slice(input);
+                lastblock[input.len()..].copy_from_slice(&state[..BLOCK_LENGTH][input.len()..]);
                 lastblock[input.len()] ^= 0x01;
                 lastblock[BLOCK_LENGTH - 1] ^= 0x80;
 

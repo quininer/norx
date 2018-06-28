@@ -1,6 +1,6 @@
 [package]
 name = "norx"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["quininer <quininer@live.com>"]
 description = "A Parallel and Scalable Authenticated Encryption Algorithm"
 repository = "https://github.com/quininer/norx"

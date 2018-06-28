@@ -111,8 +111,6 @@ impl Process<Encrypt> {
             }
         }
 
-        // use `into_iter()`
-        // https://github.com/rust-lang/rust/pull/49000
         for (input, output) in buff.iter_mut()
             .filter_map(|buf| buf.take())
             .fuse()
@@ -260,8 +258,8 @@ impl Process<Decrypt> {
             permutation::norx(state);
 
             with(state, |state| {
-                lastblock.copy_from_slice(&state[..BLOCK_LENGTH]);
                 lastblock[..input.len()].copy_from_slice(input);
+                lastblock[input.len()..].copy_from_slice(&state[..BLOCK_LENGTH][input.len()..]);
                 lastblock[input.len()] ^= 0x01;
                 lastblock[BLOCK_LENGTH - 1] ^= 0x80;
 
