@@ -1,6 +1,5 @@
 #![cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
 
-use core::simd::{ FromBits, IntoBits, u64x2 };
 use core::arch::x86_64::{
     _mm_xor_si128, _mm_add_epi64,
     _mm_and_si128, _mm_or_si128,
@@ -8,6 +7,7 @@ use core::arch::x86_64::{
     _mm_srli_epi64, _mm_slli_epi64,
     _mm_alignr_epi8
 };
+use packed_simd::{ FromBits, IntoBits, u64x2 };
 use ::{ U, S, L };
 use ::rot_const::*;
 
@@ -82,28 +82,28 @@ pub unsafe fn norx(state: &mut [U; S]) {
     }
 
     let mut s = [
-        u64x2::load_unaligned(&state[0..]),
-        u64x2::load_unaligned(&state[2..]),
-        u64x2::load_unaligned(&state[4..]),
-        u64x2::load_unaligned(&state[6..]),
-        u64x2::load_unaligned(&state[8..]),
-        u64x2::load_unaligned(&state[10..]),
-        u64x2::load_unaligned(&state[12..]),
-        u64x2::load_unaligned(&state[14..]),
+        u64x2::from_slice_unaligned(&state[0..]),
+        u64x2::from_slice_unaligned(&state[2..]),
+        u64x2::from_slice_unaligned(&state[4..]),
+        u64x2::from_slice_unaligned(&state[6..]),
+        u64x2::from_slice_unaligned(&state[8..]),
+        u64x2::from_slice_unaligned(&state[10..]),
+        u64x2::from_slice_unaligned(&state[12..]),
+        u64x2::from_slice_unaligned(&state[14..]),
     ];
 
     for _ in 0..L {
         f(&mut s);
     }
 
-    s[0].store_unaligned(&mut state[0..]);
-    s[1].store_unaligned(&mut state[2..]);
-    s[2].store_unaligned(&mut state[4..]);
-    s[3].store_unaligned(&mut state[6..]);
-    s[4].store_unaligned(&mut state[8..]);
-    s[5].store_unaligned(&mut state[10..]);
-    s[6].store_unaligned(&mut state[12..]);
-    s[7].store_unaligned(&mut state[14..]);
+    s[0].write_to_slice_unaligned(&mut state[0..]);
+    s[1].write_to_slice_unaligned(&mut state[2..]);
+    s[2].write_to_slice_unaligned(&mut state[4..]);
+    s[3].write_to_slice_unaligned(&mut state[6..]);
+    s[4].write_to_slice_unaligned(&mut state[8..]);
+    s[5].write_to_slice_unaligned(&mut state[10..]);
+    s[6].write_to_slice_unaligned(&mut state[12..]);
+    s[7].write_to_slice_unaligned(&mut state[14..]);
 }
 
 

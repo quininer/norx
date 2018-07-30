@@ -1,4 +1,3 @@
-use core::simd::{ FromBits, IntoBits, u64x4 };
 use core::arch::x86_64::{
     _mm256_xor_si256, _mm256_and_si256,
     _mm256_add_epi64, _mm256_or_si256,
@@ -6,6 +5,7 @@ use core::arch::x86_64::{
     _mm256_srli_epi64, _mm256_slli_epi64,
     _mm256_permute4x64_epi64
 };
+use packed_simd::{ FromBits, IntoBits, u64x4 };
 use ::{ U, S, L };
 use ::rot_const::*;
 
@@ -83,20 +83,20 @@ pub unsafe fn norx(state: &mut [U; S]) {
     }
 
     let mut s = [
-        u64x4::load_unaligned(&state[0..]),
-        u64x4::load_unaligned(&state[4..]),
-        u64x4::load_unaligned(&state[8..]),
-        u64x4::load_unaligned(&state[12..]),
+        u64x4::from_slice_unaligned(&state[0..]),
+        u64x4::from_slice_unaligned(&state[4..]),
+        u64x4::from_slice_unaligned(&state[8..]),
+        u64x4::from_slice_unaligned(&state[12..]),
     ];
 
     for _ in 0..L {
         f(&mut s);
     }
 
-    s[0].store_unaligned(&mut state[0..]);
-    s[1].store_unaligned(&mut state[4..]);
-    s[2].store_unaligned(&mut state[8..]);
-    s[3].store_unaligned(&mut state[12..]);
+    s[0].write_to_slice_unaligned(&mut state[0..]);
+    s[1].write_to_slice_unaligned(&mut state[4..]);
+    s[2].write_to_slice_unaligned(&mut state[8..]);
+    s[3].write_to_slice_unaligned(&mut state[12..]);
 }
 
 pub unsafe fn norx_x4(state1: &mut [U; S], state2: &mut [U; S], state3: &mut [U; S], state4: &mut [U; S]) {
