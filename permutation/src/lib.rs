@@ -1,5 +1,4 @@
 #![no_std]
-#![cfg_attr(feature = "simd", feature(stdsimd))]
 
 // FIXME `is_x86_feature_detected!` missing in `core`.
 #[cfg(feature = "simd")]

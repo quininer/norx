@@ -1,6 +1,6 @@
 [package]
 name = "norx"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["quininer <quininer@live.com>"]
 description = "A Parallel and Scalable Authenticated Encryption Algorithm"
 repository = "https://github.com/quininer/norx"
@@ -14,7 +14,7 @@ members = [ "permutation" ]
 
 [dependencies]
 arrayref = "0.3"
-subtle = { version = "0.6", default-features = false }
+seckey = { version = "0.9", default-features = false }
 byteorder = { version = "1.0", default-features = false }
 norx-permutation = { version = "0.1.1", path = "permutation", default-features = false }
 if_chain = { version = "0.1", optional = true }
@@ -28,6 +28,8 @@ rand = "0.5"
 
 [features]
 default = [ "W64", "L4", "P1" ]
+zero = []
+nightly = [ "seckey/nightly" ]
 simd = [ "norx-permutation/simd" ]
 W32 = [ "norx-permutation/W32" ]
 W64 = [ "norx-permutation/W64" ]

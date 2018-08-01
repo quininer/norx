@@ -25,9 +25,13 @@ fn test_aead() {
         thread_rng().fill_bytes(&mut m);
 
         aead_encrypt(&key, &nonce, &aad, &m, &mut c);
+
         let r = aead_decrypt(&key, &nonce, &aad, &c, &mut p);
         assert!(r, "{} times", i);
-
         assert_eq!(p, m, "{} times", i);
+
+        c[0] ^= 0x42;
+        let r = aead_decrypt(&key, &nonce, &aad, &c, &mut p);
+        assert!(!r, "{} times", i);
     }
 }

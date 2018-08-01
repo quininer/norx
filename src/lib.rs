@@ -4,7 +4,7 @@
 #[cfg(feature = "P4")]
 #[macro_use] extern crate if_chain;
 #[macro_use] extern crate arrayref;
-extern crate subtle;
+extern crate seckey;
 extern crate byteorder;
 extern crate norx_permutation as permutation;
 
@@ -75,6 +75,7 @@ impl Norx {
             }
         });
 
-        // TODO zero state
+        #[cfg(feature = "zero")]
+        seckey::zero(state);
     }
 }
