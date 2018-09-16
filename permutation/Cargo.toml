@@ -1,13 +1,13 @@
 [package]
 name = "norx-permutation"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["quininer <quininer@live.com>"]
 description = "NORX Permutation"
 repository = "https://github.com/quininer/norx"
 license = "MIT"
 
 [dependencies]
-packed_simd = { version = "0.1", features = [ "into_bits" ], optional = true }
+packed_simd = { version = "0.3", features = [ "into_bits" ], optional = true }
 
 [features]
 default = [ "W64", "L4" ]

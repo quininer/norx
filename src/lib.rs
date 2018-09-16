@@ -34,7 +34,7 @@ pub struct Decrypt;
 impl Norx {
     pub fn new(key: &[u8; KEY_LENGTH], nonce: &[u8; NONCE_LENGTH]) -> Norx {
         // TODO use CTFE https://github.com/rust-lang/rust/issues/24111
-        #![cfg_attr(feature = "cargo-clippy", allow(unreadable_literal))]
+        #[cfg_attr(feature = "cargo-clippy", allow(unreadable_literal))]
         let mut state = include!(concat!(env!("OUT_DIR"), "/", "init_state.rs"));
 
         with(&mut state, |state| {
