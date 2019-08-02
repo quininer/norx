@@ -72,6 +72,7 @@ macro_rules! EX {
 }
 
 
+#[target_feature(enable = "avx2")]
 pub unsafe fn norx(state: &mut [U; S]) {
     unsafe fn f(state: &mut [u64x4; 4]) {
         EX!{

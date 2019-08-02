@@ -14,17 +14,17 @@ members = [ "permutation" ]
 
 [dependencies]
 arrayref = "0.3"
-subtle = { version = "0.6", default-features = false }
+subtle = { version = "2", default-features = false }
 byteorder = { version = "1.0", default-features = false }
 norx-permutation = { version = "0.1.1", path = "permutation", default-features = false }
-if_chain = { version = "0.1", optional = true }
+if_chain = { version = "1", optional = true }
 
 [build-dependencies]
 byteorder = { version = "1.0", default-features = false }
 norx-permutation = { version = "0.1.1", path = "permutation", default-features = false }
 
 [dev-dependencies]
-rand = "0.5"
+rand = "0.7"
 
 [features]
 default = [ "W64", "L4", "P1" ]
